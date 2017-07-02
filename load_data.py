@@ -292,6 +292,39 @@ class WeatherData(object):
         if len(df)==0:
             warnings.warn("Error: Data Set not found!!", RuntimeWarning)
         return df
+    
+    def give_daily_maximum_month(self, date, column="temp", min=False):
+        '''Gives the maximum amount per day.
+        date: Which Month. Datetime Object
+        column: Which Data column to use
+        min=True give minmum'''
+        df = self.give_data_month_clean(date)
+        col=df[column]
+        
+        # Get all Days in month
+        year = date.year
+        month = date.month
+        num_days = calendar.monthrange(year, month)[1] # Number of days of Month
+        days = [datetime.date(year, month, day) for day in range(1, num_days+1)]
+        
+        print("Loading Data...")
+        # Load all daily column Data into vector:
+        day_data_vec = [self.give_data_day_clean(day)[column] for day in days]
+        
+        
+        # Get maximum/minimum per day:
+        if min==True:
+            res_vec = [np.min(day_data) for day_data in day_data_vec]
+            
+        elif min==False:
+            res_vec = [np.max(day_data) for day_data in day_data_vec]
+            
+        else:
+            raise ValueError("Min must be Boolean!!")
+            
+        return np.array(res_vec)
+    
+            
         
     @clean_data
     def give_data_day_clean(self, date):

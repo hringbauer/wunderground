@@ -39,10 +39,10 @@ class Analyze_WD(object):
         '''Initializes the Class. If nothing passed default to Harald's WS'''
         self.wd = wd_object
     
-    def visualize_temperature(self, date, column="temp"):
+    def visualize_day_data(self, date, column="temp"):
         '''Visualizes the Temperature for a given date.
         Date: datetime.date object'''
-        df=self.wd.give_data_day_clean(date)
+        df = self.wd.give_data_day_clean(date)
         
         # Extract Data
         temps = df[column]
@@ -53,9 +53,41 @@ class Analyze_WD(object):
         plt.title("Date: %s" % date)
         plt.plot_date(dates, temps, label=column)
         plt.legend(loc="upper right")
-        plt.gca().xaxis.set_major_formatter(DateFormatter('%H:%M:%S') )
+        plt.gca().xaxis.set_major_formatter(DateFormatter('%H:%M:%S'))
         plt.grid()
         plt.show()
+        
+    def visualize_data_month(self, date, column="temp", min=False):
+        '''Function that visualizes rain data of a given Month
+        in a heat map Form'''
+        rain_vec = self.wd.give_daily_maximum_month(date, column=column, min=min)
+        print(rain_vec)
+        print(len(rain_vec))
+        
+    def visualize_max_min_month(self, date, column="temp"):
+        '''Plots Minimum and Maximum of a given Month '''
+        mins = self.wd.give_daily_maximum_month(date, column=column, min=1)
+        maxs = self.wd.give_daily_maximum_month(date, column=column, min=0)
+        days = np.arange(len(maxs)) + 1
+        
+        plt.figure()
+        plt.plot(days, mins, "bo", label="Minimum")
+        plt.plot(days, maxs, "ro", label="Maximum")
+        plt.title("Date: %s" % date)
+        plt.xlabel("Day")
+        plt.ylabel(column)
+        plt.legend()
+        plt.show()
+        
+        
+        # plt.figure()
+        # plt.title("Date: %s" % date)
+        #
+        # plt.show()
+        
+        
+        
+
         
         
 #### Some testing functions:
@@ -64,6 +96,6 @@ if __name__ == "__main__":
     
     wd = WeatherData()
     vis = Analyze_WD(wd)
-    vis.visualize_temperature(date, column="temp")
+    vis.visualize_day_data(date, column="pressure")
     
     
