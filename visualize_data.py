@@ -85,8 +85,58 @@ class Analyze_WD(object):
         #
         # plt.show()
         
+    def visualize_rain_month(self, date_start=0, date_end=0, date_month=0):
+        '''Visualize the monthly rain in form of a heatmap.
+        start_date, end_date: Date Object.
+        If month given; overwrite start_date and end_date'''
+        
+        # 0) If month given; update start_date and end_date
+        if date_month:
+            year = date_month.year
+            month = date_month.month
+            num_days = calendar.monthrange(year, month)[1]  # Number of days of Month
+            date_start = datetime.date(year, month, 1)
+            date_end = datetime.date(year, month, num_days)
+            
+        # 1) Load the Rain        
+        dates, rain_tots = self.wd.give_daily_rain(date_start, date_end)
+        rain_tots = np.array(rain_tots, dtype="float")
+        for i in xrange(len(rain_tots)):
+            print("%s: %.1f ml" % (dates[i], rain_tots[i]))
+        x_vec = range(1, len(dates) + 1)
+        print(x_vec)
+        
+        plt.figure(figsize=(10,5))
+        ax = plt.gca()
+        rects1 = plt.bar(x_vec, rain_tots, width=0.8)
+        plt.ylabel("Rain Amount [ml]", fontsize=14)
+        plt.xlabel("Day", fontsize=14)
+        plt.xticks(x_vec)
+        plt.ylim([0, np.max(rain_tots) + 3])
+        plt.title(date_start.strftime("%B"), fontsize=14)
+        plt.text(0.6, 0.85, 'Total Rain: %.1f ml' % np.sum(rain_tots), transform=ax.transAxes, fontsize=14)
+        autolabel(rects1, ax)  # Puts the Label on   
+        plt.show()  
         
         
+    
+    def visualize_mean_month(self, date, column="temp"):
+        '''Visualize the mean over a month.'''
+        raise NotImplementedError("Implement This!")
+        
+        
+# Some Helper Functions:
+def autolabel(rects, ax):
+            """
+            Attach a text label above each bar displaying its height
+            """
+            for rect in rects:
+                height = rect.get_height()
+                ax.text(rect.get_x() + rect.get_width() / 2., 1.05 * height,
+                        '%.1f' % float(height),
+                        ha='center', va='bottom')
+            
+   
 
         
         

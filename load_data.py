@@ -29,20 +29,20 @@ def clean_data(f):
     the clean data. First call the original function
     and then extract the cleaned data'''
     def decorated(*args, **kwargs):
-        df = f(*args, **kwargs) # Call original Function
+        df = f(*args, **kwargs)  # Call original Function
         df = df[df['solar'] >= 0]
         return df
     return decorated
 
 def give_dt_date(string):
-    '''Gives back date from string'''
-    dt_object = datetime.datetime.strptime(string, '%Y-%m-%d %H:%M:%S') # Convert to DateTime
-    date=dt_object.date()
+    '''Give back date from string'''
+    dt_object = datetime.datetime.strptime(string, '%Y-%m-%d %H:%M:%S')  # Convert to DateTime
+    date = dt_object.date()
     return date
 
 def give_dt_object(string):
-    '''Gives back datetime object from string'''
-    dt_object = datetime.datetime.strptime(string, '%Y-%m-%d %H:%M:%S') # Convert to DateTime
+    '''Give back datetime object from string'''
+    dt_object = datetime.datetime.strptime(string, '%Y-%m-%d %H:%M:%S')  # Convert to DateTime
     return dt_object
     
 #############################################################
@@ -170,12 +170,12 @@ class WeatherData(object):
     def download_data_month(self, date):
         '''Loads all Data from one month in pandas a data-frame.
         Gets raw data from all days and concatenates them'''
-        day=1
+        day = 1
         
-        dfs=[]
-        for day in xrange(1,calendar.monthrange(date.year, date.month)[1]+1):
+        dfs = []
+        for day in xrange(1, calendar.monthrange(date.year, date.month)[1] + 1):
             df = self.download_data_day(day, date.month, date.year)
-            if len(df)==0:
+            if len(df) == 0:
                 break
             dfs.append(df)
         print(len(dfs))
@@ -215,7 +215,7 @@ class WeatherData(object):
         # Convert to pandas dataframe
         df = pd.read_csv(StringIO.StringIO(data), index_col=False)
         
-        if len(df)==0:
+        if len(df) == 0:
              warnings.warn("Error: Empty Data Set!!", RuntimeWarning)
              return df
          
@@ -264,8 +264,8 @@ class WeatherData(object):
     def give_data_month(self, date):
         '''Loads data from month in date (date object)
         from local data base.'''
-        month=date.month
-        year =date.year
+        month = date.month
+        year = date.year
         
         path = self.local_folder + str(year) + "/" + str(month) + ".csv"
         
@@ -284,12 +284,12 @@ class WeatherData(object):
     
     def give_data_day(self, date):
         '''Extracts only a day. Takes a date-time as input'''
-        df=self.give_data_month(date)
-        dates = np.array(map(give_dt_date, df['date'])) # Extract only the dates
-
-        df=df[dates==date]  # Compare to wished date; not minor information
+        df = self.give_data_month(date)
+        dates = np.array(map(give_dt_date, df['date']))  # Extract only the dates
         
-        if len(df)==0:
+        df = df[dates == date]  # Compare to wished date; not minor information
+        
+        if len(df) == 0:
             warnings.warn("Error: Data Set not found!!", RuntimeWarning)
         return df
     
@@ -299,13 +299,13 @@ class WeatherData(object):
         column: Which Data column to use
         min=True give minmum'''
         df = self.give_data_month_clean(date)
-        col=df[column]
+        col = df[column]
         
         # Get all Days in month
         year = date.year
         month = date.month
-        num_days = calendar.monthrange(year, month)[1] # Number of days of Month
-        days = [datetime.date(year, month, day) for day in range(1, num_days+1)]
+        num_days = calendar.monthrange(year, month)[1]  # Number of days of Month
+        days = [datetime.date(year, month, day) for day in range(1, num_days + 1)]
         
         print("Loading Data...")
         # Load all daily column Data into vector:
@@ -313,10 +313,10 @@ class WeatherData(object):
         
         
         # Get maximum/minimum per day:
-        if min==True:
+        if min == True:
             res_vec = [np.min(day_data) for day_data in day_data_vec]
             
-        elif min==False:
+        elif min == False:
             res_vec = [np.max(day_data) for day_data in day_data_vec]
             
         else:
@@ -324,32 +324,71 @@ class WeatherData(object):
             
         return np.array(res_vec)
     
+    def give_tot_rain(self, date, column=["total_rain"]):
+        '''Give maximum rain for a day
+        data: Which day - Datetime Object'''
+        rain_vals = self.give_data_day_clean(date)[column]
+        
+        if len(rain_vals) != 0:
+            max_rain = np.max(rain_vals)  # Gets the Maximum of total Rain
+        else:
+            max_rain = -0.1  # Default rain value to -1.
             
+        return max_rain
+        
+        
+        
+        
+    def give_daily_rain(self, date_start=0, date_end=0):
+        '''Give daily rain in Period from date_start to date_end.
+        Return numpy array
+        
+        date_start: Start of the Period
+        date_end: End of the Period.
+        If month; take date_start and date_end from there'''
+        
+        # Create Date Vector: From Beginning to End
+        
+        # If Month given; overwrite start/end days:
+            
+        days_between = self.dates_between(date_start, date_end)
+    
+        # Extract Total Rain Vector:
+        rain_tots = [self.give_tot_rain(date) for date in days_between]
+        return days_between, rain_tots
+    
+    def dates_between(self, d1, d2):
+        '''Return Array of Dates between d1 and and d2
+        d1, d2: Datetime Objects'''
+        delta = d2 - d1  # timedelta
+        days_between = [d1 + datetime.timedelta(days=i) for i in range(delta.days + 1)]
+        return days_between
+
         
     @clean_data
     def give_data_day_clean(self, date):
-        '''Extract a Day cleeaned up'''
+        '''Extract a Day cleaned up'''
         return self.give_data_day(date)
     
     
 
 #################################
 if __name__ == "__main__":
-    date = datetime.date(year=2017, month=5, day=5)
+    date = datetime.date(year=2017, month=7, day=29)
 # Test the Class:
     wd = WeatherData()
     # wd.update_local(all=1)
     # wd.update_local()
-    #df=wd.give_data_month(date)
-    #df = wd.give_data_month_clean(date)
+    # df=wd.give_data_month(date)
+    # df = wd.give_data_month_clean(date)
     df = wd.give_data_day_clean(date)
     
     
     plt.figure()
-    plt.plot(df["temp"],'ro')
+    plt.plot(df["temp"], 'ro')
     plt.show()
     print(df.head(10))
-    #print(np.shape(df))
+    # print(np.shape(df))
     # wd.download_data_day(1, 5, 2017)
     # data = wd.give_clean_data()
     # print(data.head(1))

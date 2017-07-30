@@ -34,11 +34,11 @@ def menu():
                 
                 while True:
                     int3 = input("What Analysis? \n(1) Monthly Rain Analysis \n(2) Show Daily Temperature" 
-                    "\n(3) Show Max/Min Month \n(9) Break\n")
+                    "\n(3) Show Max/Min Month \n(4) Show Records \n(9) Break\n")
                     
                     if int3 == 1:
                         date = get_month() # Get the Date (via Input)
-                        v_wd.visualize_rain_month(date)
+                        v_wd.visualize_rain_month(date_month=date)
                         
                     elif int3 == 2:
                         date = get_day() # Get the Date (via Input)
@@ -93,12 +93,18 @@ def get_month(year=None, month=None, day=None):
 def get_data_type():
     '''What Data to visualize'''
     i = input("What Data to you want to analyze?"
-                  "\n(1) Temperature \n(2) Rain \n(3) Whateva\n")
+                  "\n(1) Temperature \n(2) Rain Total \n(3) Whateva\n")
     if i == 1:
         dtype = "temp"
+        
+    elif i == 2:
+        dtype = "total_rain"
     
     return dtype
 
 ### Call the main loop
 if __name__ == "__main__":
     menu()
+    
+    
+    
