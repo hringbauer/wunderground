@@ -33,22 +33,25 @@ def menu():
                 v_wd = Analyze_WD(wd)  # Create the Analysis Object
                 
                 while True:
-                    int3 = input("What Analysis? \n(1) Monthly Rain Analysis \n(2) Show Daily Temperature" 
-                    "\n(3) Show Max/Min Month \n(4) Show Records \n(9) Break\n")
+                    int3 = input("What Analysis? \n(1) Monthly Rain Analysis \n(2) Monthly Sun Analysis" 
+                    "\n(3) Show Max/Min Month \n(4) Day Temperature\n(5) Show Records \n(9) Break\n")
                     
                     if int3 == 1:
                         date = get_month() # Get the Date (via Input)
                         v_wd.visualize_rain_month(date_month=date)
-                        
+                    
                     elif int3 == 2:
-                        date = get_day() # Get the Date (via Input)
-                        v_wd.visualize_day_data(date, column="temp")
+                        date = get_month()
+                        v_wd.visualize_solar_month(date_month=date)  
                         
                     elif int3 == 3:
                         date = get_month()
                         dtype = get_data_type()
                         v_wd.visualize_max_min_month(date, column=dtype)
                         
+                    elif int3 == 4:
+                        date = get_day() # Get the Date (via Input)
+                        v_wd.visualize_day_data(date, column="temp")
                         
                     elif int3 == 9:
                         break

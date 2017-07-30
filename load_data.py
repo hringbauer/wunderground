@@ -335,11 +335,27 @@ class WeatherData(object):
             max_rain = -0.1  # Default rain value to -1.
             
         return max_rain
+    
+    def give_tot_solar(self, date, column=["solar"]):
+        '''Gives Integrated total solar Radiation per Day'''
+        solar_vals = np.array(self.give_data_day_clean(date)[column], dtype="float")
+        time_points = self.give_data_day_clean(date)["date"]
         
+        if len(solar_vals) != 0:
+            mid_bin_solar = (solar_vals[1:] + solar_vals[:-1]) / 2.0  # Linear Interpolation
+            times = np.array(map(give_dt_object, time_points),dtype="object")
+            delta_time_points = times[1:] - times[:-1]
+            second_delta = np.array([x.total_seconds() for x in delta_time_points])
+            # Measures time Difference in Hours and kilo watt
+            tot_solar = np.sum(second_delta * mid_bin_solar) / (3600.0 * 1000.0)  
+            
+        else:
+            tot_solar = -0.1  # Default rain value to -1.
+            
+        return tot_solar
+     
         
-        
-        
-    def give_daily_rain(self, date_start=0, date_end=0):
+    def give_daily_rain(self, date_start, date_end):
         '''Give daily rain in Period from date_start to date_end.
         Return numpy array
         
@@ -356,6 +372,19 @@ class WeatherData(object):
         # Extract Total Rain Vector:
         rain_tots = [self.give_tot_rain(date) for date in days_between]
         return days_between, rain_tots
+    
+    def give_daily_solar(self, date_start, date_end):
+        '''Give daily integrated Sunshine in Period from date_start to date_end.
+        Return date array and numpy array
+        
+        date_start: Start of the Period
+        date_end: End of the Period.
+        If month; take date_start and date_end from there'''
+        days_between = self.dates_between(date_start, date_end)
+    
+        # Extract Total Rain Vector:
+        solar_tots = np.array([self.give_tot_solar(date) for date in days_between], dtype="float")
+        return days_between, solar_tots
     
     def dates_between(self, d1, d2):
         '''Return Array of Dates between d1 and and d2
