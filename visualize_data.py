@@ -57,17 +57,17 @@ class Analyze_WD(object):
         plt.grid()
         plt.show()
         
-    def visualize_data_month(self, date, column="temp", min=False):
+    def visualize_data_month(self, date, column="temp", minimum=False):
         '''Function that visualizes rain data of a given Month
         in a heat map Form'''
-        rain_vec = self.wd.give_daily_maximum_month(date, column=column, min=min)
+        rain_vec = self.wd.give_daily_maximum_month(date, column=column, minimum=minimum)
         print(rain_vec)
         print(len(rain_vec))
         
     def visualize_max_min_month(self, date, column="temp"):
-        '''Plots Minimum and Maximum of a given Month '''
-        mins = self.wd.give_daily_maximum_month(date, column=column, min=1)
-        maxs = self.wd.give_daily_maximum_month(date, column=column, min=0)
+        '''Plot Minimum and Maximum of a given Month '''
+        mins = self.wd.give_daily_maximum_month(date, column=column, minimum=1)
+        maxs = self.wd.give_daily_maximum_month(date, column=column, minimum=0)
         days = np.arange(len(maxs)) + 1
         
         plt.figure()
@@ -76,6 +76,7 @@ class Analyze_WD(object):
         plt.title("Date: %s" % date)
         plt.xlabel("Day")
         plt.ylabel(column)
+        plt.xticks(days)
         plt.legend()
         plt.show()
         
@@ -126,19 +127,75 @@ class Analyze_WD(object):
         
         plt.figure(figsize=(10, 5))
         ax = plt.gca()
-        rects1 = plt.bar(x_vec, solar_tots, width=0.8,color="yellow")
+        rects1 = plt.bar(x_vec, solar_tots, width=0.8, color="yellow")
         plt.ylabel("Solar Radiation [kwH]", fontsize=14)
         plt.xlabel("Day", fontsize=14)
         plt.xticks(x_vec)
-        plt.ylim([0, np.max(solar_tots) + 500])
+        plt.ylim([0, np.max(solar_tots) + 1.0])
         plt.title(date_start.strftime("%B"), fontsize=14)
         plt.text(0.6, 0.85, 'Mean Solar Power: %.1f kwH' % np.mean(solar_tots), transform=ax.transAxes, fontsize=14)
         autolabel(rects1, ax)  # Puts the Label on   
         plt.show() 
     
-    def visualize_mean_month(self, date, column="temp"):
-        '''Visualize the mean over a month.'''
-        raise NotImplementedError("Implement This!")
+    def visualize_records(self, date_start=0, date_end=0, date_month=0, date_year=0, minimum=False,
+                          column="Temp"):
+        '''Print and return the maximum Value of a given Period
+        Minimum: Print and return Minimum'''
+        
+        if date_month:
+            date_start, date_end = get_month_start_end(date_month)
+        
+        elif date_year:
+            date_start, date_end = get_year_start_end(date_year)
+            
+        res, days = self.wd.give_daily_max(date_start, date_end, column=column, minimum=minimum)
+        
+        # Remove Days with missing data
+        inds_fin = np.isfinite(res)
+        res, days = res[inds_fin], days[inds_fin]
+        
+        if minimum:
+            extreme = np.min(res) 
+            day = days[np.argmin(res)]
+            
+        else:
+            extreme = np.max(res)
+            day = days[np.argmax(res)]
+        
+        print("Extreme Value: %.4f" % extreme)
+        print("On Day: %s" % day)
+            
+    def visualize_mean_month(self, date_month=None, start_date=None, end_date=None, column="rain", smoothing=False):
+        '''Visualizes the mean Values per Month
+        smoothing: Whether to use some form of smoothing (for instance lowess)'''
+        
+        # In case that month given - use it:
+        if date_month:  
+            date_start, date_end = get_month_start_end(date_month)
+            
+        # Get the data:
+        days, res = self.wd.give_days_mean(date_start, date_end, column=column)
+        
+        
+        # Smooth Data (and produce middle Curve)
+        
+        # Give Text Output:
+        for i in zip(days, res):
+            print(i[0])
+            print("%.3f" % i[1])
+        
+        # Visualize the data
+        plt.figure()
+        plt.plot(days, res, "ro", label="Daily Mean")
+        plt.legend()
+        plt.title("")
+        # Plot Day Lines
+        plt.title(date_month.strftime("%B %Y"), fontsize=18)
+        plt.ylabel("Daily Mean of " + column, fontsize=14)
+        plt.xlabel("Day", fontsize=14)
+        ax = plt.gca()
+        plt.text(0.6, 0.85, 'Mean Value: %.2f' % np.nanmean(res), transform=ax.transAxes, fontsize=14)
+        plt.show()
         
         
 # Some Helper Functions:
@@ -152,6 +209,14 @@ def get_month_start_end(date_month):
     date_start = datetime.date(year, month, 1)
     date_end = datetime.date(year, month, num_days)
     return date_start, date_end
+
+def get_year_start_end(date_year):
+    '''Get star and end of given year.
+    Return first and last date.'''
+    year = date_year   
+    date_start = datetime.date(year, 1, 1)
+    date_end = datetime.date(year, 12, 31)
+    return date_start, date_end
     
 def autolabel(rects, ax):
             """
@@ -163,10 +228,6 @@ def autolabel(rects, ax):
                         '%.1f' % float(height),
                         ha='center', va='bottom')
             
-   
-
-        
-        
 #### Some testing functions:
 if __name__ == "__main__":
     date = datetime.date(year=2017, month=5, day=27)

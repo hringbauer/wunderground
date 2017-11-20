@@ -293,11 +293,12 @@ class WeatherData(object):
             warnings.warn("Error: Data Set not found!!", RuntimeWarning)
         return df
     
-    def give_daily_maximum_month(self, date, column="temp", min=False):
+    def give_daily_maximum_month(self, date, column="temp", minimum=False):
         '''Gives the maximum amount per day.
         date: Which Month. Datetime Object
         column: Which Data column to use
-        min=True give minmum'''
+        min=True give minmum
+        Return Numpy Array'''
         df = self.give_data_month_clean(date)
         col = df[column]
         
@@ -307,24 +308,12 @@ class WeatherData(object):
         num_days = calendar.monthrange(year, month)[1]  # Number of days of Month
         days = [datetime.date(year, month, day) for day in range(1, num_days + 1)]
         
-        print("Loading Data...")
-        # Load all daily column Data into vector:
-        day_data_vec = [self.give_data_day_clean(day)[column] for day in days]
-        
-        
-        # Get maximum/minimum per day:
-        if min == True:
-            res_vec = [np.min(day_data) for day_data in day_data_vec]
-            
-        elif min == False:
-            res_vec = [np.max(day_data) for day_data in day_data_vec]
-            
-        else:
-            raise ValueError("Min must be Boolean!!")
+        res_vec, _ = self.give_daily_max(datetime.date(year, month, 1), datetime.date(year, month, num_days),
+                            column=column, minimum=minimum)
             
         return np.array(res_vec)
     
-    def give_tot_rain(self, date, column=["total_rain"]):
+    def give_tot_rain(self, date, column="total_rain"):
         '''Give maximum rain for a day
         data: Which day - Datetime Object'''
         rain_vals = self.give_data_day_clean(date)[column]
@@ -336,24 +325,96 @@ class WeatherData(object):
             
         return max_rain
     
-    def give_tot_solar(self, date, column=["solar"]):
+    def give_tot_solar(self, date, column="solar"):
         '''Gives Integrated total solar Radiation per Day'''
-        solar_vals = np.array(self.give_data_day_clean(date)[column], dtype="float")
+        df = self.give_data_day_clean(date)
+        solar_vals = df[column].values
+        # solar_vals = self.give_data_day_clean(date)[column].values
         time_points = self.give_data_day_clean(date)["date"]
         
         if len(solar_vals) != 0:
             mid_bin_solar = (solar_vals[1:] + solar_vals[:-1]) / 2.0  # Linear Interpolation
-            times = np.array(map(give_dt_object, time_points),dtype="object")
+            times = np.array(map(give_dt_object, time_points), dtype="object")
             delta_time_points = times[1:] - times[:-1]
-            second_delta = np.array([x.total_seconds() for x in delta_time_points])
+            second_delta = np.array([x.total_seconds() for x in delta_time_points], dtype="float")
             # Measures time Difference in Hours and kilo watt
-            tot_solar = np.sum(second_delta * mid_bin_solar) / (3600.0 * 1000.0)  
+            tot_solar = np.sum(second_delta * mid_bin_solar) / (1000.0 * 3600.0)
+            
             
         else:
             tot_solar = -0.1  # Default rain value to -1.
-            
         return tot_solar
+    
+    def give_days_mean(self, start_date, end_date, column="total_rain"):
+        '''Give daily means between Start and End Date.
+        Return Day as well as Mean array.'''
+        day_array = self.dates_between(start_date, end_date)
+        mean_array = np.array([self.give_day_mean(date, column) for date in day_array])
+        return day_array, mean_array
+        
+        
+        
+    def give_day_mean(self, date, column=""):
+        '''Gives the daily mean of a Value (For instance Temperature)'''
+        df = self.give_data_day_clean(date)
+        vals = df[column].values
+        t = df["date"]
+        
+        # Calculate the means
+        if len(vals) != 0:
+            mid_vals = (vals[1:] + vals[:-1]) / 2.0  # Linear Interpolation
+            times = np.array(map(give_dt_object, t), dtype="object")
+            delta_time_points = times[1:] - times[:-1]  # Calculate bin lengths
+            second_delta = np.array([x.total_seconds() for x in delta_time_points], dtype="float")
+            
+            tot_sec = np.sum(second_delta)
+            max_period = np.max(second_delta)  # Check wether not too big interval missing
+            
+            if not (75000 < tot_sec < 86401):  # Check whether enough total seconds
+                print(tot_sec)
+                warnings.warn("Something seems wrong with total seconds!", RuntimeWarning)
+                mean_val = np.nan
+            
+            elif max_period > 7200:  # More than one hour is missing!
+                print("Too big timeinterval: %.2f" % max_period)
+                warnings.warn("Too big time interval!", RuntimeWarning)
+                print(date)
+                mean_val = np.nan
+            
+            #print("Total Seconds: %.2f" % tot_sec)  # For debugging.
+            else: 
+                mean_val = np.sum(second_delta * mid_vals) / tot_sec  # Average Value
+              
+        else:
+            raise RuntimeWarning("Data does not exist!!")
+            print("For Date:")
+            print(date)
+            mean_val = np.nan  # Default rain value to -1.
+        
+        return mean_val
      
+    def give_daily_max(self, date_start, date_end, column="total_rain", minimum=False):
+        '''Return daily maximum for given period.
+        Give back Numpy Array and array of days'''
+        days_between = self.dates_between(date_start, date_end)
+        
+        # Get maximum/minimum per day:
+        # Load all daily column Data into vector:
+        print("Loading Data...")
+        day_data_vec = [self.give_data_day_clean(day)[column] for day in days_between]
+        
+        if minimum == True:
+            res_vec = [np.min(day_data) for day_data in day_data_vec]
+            
+        elif minimum == False:
+            res_vec = [np.max(day_data) for day_data in day_data_vec]
+            
+        else:
+            raise ValueError("Min. must be Boolean!!")
+        
+            
+        return np.array(res_vec), np.array(days_between)  # Return the Results and the days
+        
         
     def give_daily_rain(self, date_start, date_end):
         '''Give daily rain in Period from date_start to date_end.
@@ -399,11 +460,101 @@ class WeatherData(object):
         '''Extract a Day cleaned up'''
         return self.give_data_day(date)
     
+#################################
+class SummaryData(object):
+    '''Class that calculates and loads
+    Summary Statistics from Data for every Day/Month/Year
+    Data is stored in csv.tables that are accessed via Pandas.
+    Columns: DayMinT, DayMaxT, DayMeanT, DayTotR, DayTotS
     
+    It is different than Weatherdata; as here processed Data is looked into.
+    
+    '''
+    local_folder = "./Data/Summary/"  # Where to find the data
+    fn_last_updated = "last_updated.p"  # Name of File that saves when there was the last update
+    local_file_name_days = "/sum_days.csv"
+    local_file_name_months = "/sum_months.csv"
+    local_file_name_years = "/sum_years.csv"
+    
+    last_date = 0  # Last date for which data is available
+    
+    # The Default Values for first Data
+    first_year = 2017
+    first_month = 5
+    
+    last_data = ""
+    
+    wd = 0  # The Weather station data.
+
+    def __init__(self, wd):
+        '''Initializes the Class. If nothing passed default to Harald's WS;
+        but can also be run for other WS'''
+        self.wd = wd  # 
+        assert(self.wd.station_name == "IDRSING3")  # Check wether it is my whether Station
+        
+    def update_sum_days(self):
+        '''Updates Summary Statistics since last day'''
+        # Find out last day save
+        last_save_date = self.load_last_date()
+        
+        # Find out last day of data
+        last_data_date = wd.load_last_date()
+        
+        
+        # Assert Last day > Last Day Save
+        assert(last_save_date <= last_data_date)
+        
+        # Calculate Summary Statistics for inbetween
+        new_summary_stats = calculate_summary_statistics_day()
+        
+        # Add them to Pandas Data Table
+        
+        
+        # Save Everything
+        save_last_date(date=last_data_date)
+        
+    def save_last_date(self, date):
+        '''Pickle the last save date.'''
+        path = self.local_folder + self.fn_last_updated
+        
+        print("Saving New Last Date. Year: %i Month: %i" % (date.year, date.month))
+        pickle.dump(date, open(path, "wb"))
+        
+    def load_last_date(self):
+        '''Pickle loads the last save date.'''
+        path = self.local_folder + self.fn_last_updated
+        
+        # If it exists; otherwise go back all the way to the beginning
+        if os.path.exists(path):  
+            date = pickle.load(open(path, "rb"))
+            
+        else: date = datetime.date(year=self.first_year, month=self.first_month, day=1)
+        
+        print("Loading last Save Date. Year: %i Month: %i" % (date.year, date.month))
+        return date
+    
+    
+    def calculate_summary_statistics_day(self, start_date, end_date):
+        '''Calculate Summary Statistics Day'''
+        raise NotImplementedError("Implement this!")
+        
+    def give_summary_statistics_day(self, start, end_date, column):
+        '''Load Summary Statistics Day. Give back array.'''
+        raise NotImplementedError("Implement this!")
+        
+    def calculate_summary_statistics_year(self, start_date, end_date):
+        '''Calculate Summary Statistics Year'''
+        raise NotImplementedError("Implement this!")
+    
+    def give_summary_statistics_year(self, start_date, end_date, column="Total"):
+        '''Load Summary Statistics Year. Give back array.'''
+        raise NotImplementedError("Implement this!")
+        
+
 
 #################################
 if __name__ == "__main__":
-    date = datetime.date(year=2017, month=7, day=29)
+    date = datetime.date(year=2017, month=6, day=1)
 # Test the Class:
     wd = WeatherData()
     # wd.update_local(all=1)
@@ -417,6 +568,13 @@ if __name__ == "__main__":
     plt.plot(df["temp"], 'ro')
     plt.show()
     print(df.head(10))
+    df = wd.give_data_day_clean(date)
+    print(df[:2])
+    solar_vals = df["solar"].values
+    # solar_vals = self.give_data_day_clean(date)[column].values
+    
+    print(solar_vals[0])
+    print(type(solar_vals[0]))
     # print(np.shape(df))
     # wd.download_data_day(1, 5, 2017)
     # data = wd.give_clean_data()
