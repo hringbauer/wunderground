@@ -7,6 +7,7 @@ It is in a do it yourself adventure style.
 from load_data import WeatherData
 from visualize_data import Analyze_WD
 import datetime
+import Tkinter as tk  # For the graphical user interface
 
 def menu_text():
     print("Heyyaa hope u doing well future Harald.")
@@ -18,12 +19,12 @@ def menu_text():
                         "\n(2) Calculate Summary Statistics \n(3) Analyze Weather Data"
                                                 "\n(9) Exit\n")
         
-        if int1==1:
+        if int1 == 1:
             while True:
                 int2 = input("""Download what? \n(1) Since Last Update"""
                 """\n(2) All Data \n(3) Specific Dates \n(4) Back\n""")
                 
-                if int2 ==1:
+                if int2 == 1:
                     wd.update_local()
                 
                 if int2 == 2:
@@ -37,7 +38,7 @@ def menu_text():
                 elif int2 == 4:
                     break
                 
-        elif int1==3:
+        elif int1 == 3:
                 v_wd = Analyze_WD(wd)  # Create the Analysis Object
                 
                 while True:
@@ -45,7 +46,7 @@ def menu_text():
                     "\n(3) Show Max/Min Month \n(4) Plot Mean per Month \n(5) Day Temperature\n(6) Show Records \n(9) Break\n")
                     
                     if int3 == 1:
-                        date = get_month() # Get the Date (via Input)
+                        date = get_month()  # Get the Date (via Input)
                         v_wd.visualize_rain_month(date_month=date)
                     
                     elif int3 == 2:
@@ -63,12 +64,12 @@ def menu_text():
                         v_wd.visualize_mean_month(date_month=date, column=dtype)        
                         
                     elif int3 == 5:
-                        date = get_day() # Get the Date (via Input)
+                        date = get_day()  # Get the Date (via Input)
                         v_wd.visualize_day_data(date, column="temp")
                     
                     elif int3 == 6:
                         date = get_month()
-                        minimum=int(input("Value? \n(0) Maximum \n(1) Minimum\n" ))
+                        minimum = int(input("Value? \n(0) Maximum \n(1) Minimum\n"))
                         print(minimum)
                         dtype = get_data_type()
                         
@@ -81,13 +82,18 @@ def menu_text():
                     else:
                         print("Invalid Input!!")
         
-        if int1==9: break
+        if int1 == 9: break
         
     print("see u later alligata")
     return 0
 
+#######################################
+#######################################
+def doNothing():
+    print("lolol")
+    
 
-### Helper Input Functions; that will get called quite a bit
+# ## Helper Input Functions; that will get called quite a bit
 def get_day(year=None, month=None, day=None):
     '''Return the Day Date object'''
     if year == None:
@@ -96,7 +102,7 @@ def get_day(year=None, month=None, day=None):
     if month == None:
         month = input("What month?\n")
         
-    if day== None:
+    if day == None:
         day = input("What day?\n")
         
     return datetime.date(year=year, month=month, day=day)
@@ -123,9 +129,10 @@ def get_data_type():
     
     return dtype
 
-### Call the main loop
+# ## Call the main loop
 if __name__ == "__main__":
     menu_text()
+    
     
     
     

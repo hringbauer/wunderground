@@ -52,6 +52,9 @@ class WeatherData(object):
     '''Simple class that loads and gives back 
     specific data.'''
     station_name = "IDRSING3"
+    url = "http://www.wunderground.com/weatherstation/WXDailyHistory.asp?ID={station}&day={day}&month={month}&year={year}&graphspan=day&format=1"
+    
+    
     local_folder = "./Data/"  # Where to find the data
     last_date = 0  # Last date for which data is available
     fn_last_updated = "last_updated.p"  # Name of File that saves when there was the last update
@@ -101,7 +104,7 @@ class WeatherData(object):
         print("Loading last Save Date. Year: %i Month: %i" % (date.year, date.month))
         return date
     
-    def save_local(self, begin_date=None, end_date=None):
+    def save_local(self, begin_date=None, end_date=None, gui=None):
         '''Saves the date locally within the given time period
         from begin to end date. Format should be in Datetime objects
         '''
@@ -117,9 +120,9 @@ class WeatherData(object):
             end_date = datetime.datetime.now()
           
         for dt in rrule(MONTHLY, dtstart=begin_date, until=end_date):
-            self.local_save_month(dt)
+            self.local_save_month(dt, gui)
         
-    def update_local(self, end_date=None, all=0): 
+    def update_local(self, end_date=None, all=0, gui=None): 
         '''Updates all local files up until end_date.
         If all reload EVERYTHING!''' 
         if end_date == None:
@@ -127,24 +130,32 @@ class WeatherData(object):
             
         begin_date = self.load_last_date()  # Load the last time something was updated     
         
+        print("Download starting from:")
+        print(self.station_name)
+        
+        if gui:
+            gui.update_idletasks()
+        
         if all == 0:
-            self.save_local(begin_date, end_date)
+            self.save_local(begin_date, end_date, gui)
         
         elif all == 1:
-            self.save_local(end_date=end_date)  # Locally saves everything!
+            self.save_local(end_date=end_date, gui=gui)  # Locally saves everything!
         
         self.save_last_date(end_date)  # Save the End Date
-        print("Update successfully finished!")
+        print("Update successfully finished!")     
         
-        
-    def local_save_month(self, date):
+    def local_save_month(self, date, gui=None):
         '''Locally saves data of a specific month.
         Date is dateutil object; data is save to its month.'''
         year = date.year
         month = date.month
         print("Downloading Year: %i Month: %i" % (year, month))
         
-        df = self.download_data_month(date)
+        if gui:
+            gui.update_idletasks()
+        
+        df = self.download_data_month(date, gui)
         
         path = self.local_folder + str(year) + "/" + str(month) + ".csv"
         
@@ -167,24 +178,25 @@ class WeatherData(object):
         
         return df
     
-    def download_data_month(self, date):
+    def download_data_month(self, date, gui=None):
         '''Loads all Data from one month in pandas a data-frame.
         Gets raw data from all days and concatenates them'''
         day = 1
         
         dfs = []
         for day in xrange(1, calendar.monthrange(date.year, date.month)[1] + 1):
-            df = self.download_data_day(day, date.month, date.year)
+            df = self.download_data_day(day, date.month, date.year, gui=gui)
             if len(df) == 0:
                 break
             dfs.append(df)
-        print(len(dfs))
+        if gui:
+            print("Data Rows per Month loaded: %i" % len(dfs))
         df = pd.concat(dfs, ignore_index=True)
         return df
     
         
          
-    def download_data_day(self, day, month, year, station=""):
+    def download_data_day(self, day, month, year, station="", gui=None):
         """
         Function to return a data frame of weather data for Wunderground PWS station.
         Returns all data for a single day
@@ -201,11 +213,15 @@ class WeatherData(object):
         if len(station) == 0:
             station = self.station_name
         
-        print("Loading Data for Station:  %s" % self.station_name)
-        url = "http://www.wunderground.com/weatherstation/WXDailyHistory.asp?ID={station}&day={day}&month={month}&year={year}&graphspan=day&format=1"
-        full_url = url.format(station=station, day=day, month=month, year=year)
-        print("Download in progress from:")
-        print(full_url)
+        print("Downloading: Year: %s Month: %s Day: %s " % (year, month, day))
+        if gui:
+            gui.update_idletasks()
+            
+        # print("Loading Data for Station:  %s" % self.station_name)
+        # url = "http://www.wunderground.com/weatherstation/WXDailyHistory.asp?ID={station}&day={day}&month={month}&year={year}&graphspan=day&format=1"
+        full_url = self.url.format(station=station, day=day, month=month, year=year)
+        # print("Download in progress from:")
+        # print(full_url)
         # Request data from wunderground data
         response = requests.get(full_url,
                                 headers={'User-agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'})
@@ -238,8 +254,8 @@ class WeatherData(object):
         df1['dewpoint'] = df['DewpointC'].astype(float)
         df1['station'] = df['station'].astype(str)
         
-        print("Observations: %i" % df.shape[0])
-        print(df1.dtypes)
+        # print("Observations: %i" % df.shape[0])
+        # print(df1.dtypes)
         
         self.data = df1
         
@@ -313,15 +329,21 @@ class WeatherData(object):
             
         return np.array(res_vec)
     
-    def give_tot_rain(self, date, column="total_rain"):
+    def give_tot_rain(self, date, column="total_rain", gui=None):
         '''Give maximum rain for a day
-        data: Which day - Datetime Object'''
+        date: Which day - Datetime Object'''
+        print("Loading Rain from: %s" % str(date))
+        
         rain_vals = self.give_data_day_clean(date)[column]
         
         if len(rain_vals) != 0:
             max_rain = np.max(rain_vals)  # Gets the Maximum of total Rain
+            print("Max Rain: %.2f" % max_rain)
         else:
             max_rain = -0.1  # Default rain value to -1.
+        
+        if gui:
+            gui.update_idletasks()
             
         return max_rain
     
@@ -381,7 +403,7 @@ class WeatherData(object):
                 print(date)
                 mean_val = np.nan
             
-            #print("Total Seconds: %.2f" % tot_sec)  # For debugging.
+            # print("Total Seconds: %.2f" % tot_sec)  # For debugging.
             else: 
                 mean_val = np.sum(second_delta * mid_vals) / tot_sec  # Average Value
               
@@ -416,7 +438,7 @@ class WeatherData(object):
         return np.array(res_vec), np.array(days_between)  # Return the Results and the days
         
         
-    def give_daily_rain(self, date_start, date_end):
+    def give_daily_rain(self, date_start, date_end, gui=None):
         '''Give daily rain in Period from date_start to date_end.
         Return numpy array
         
@@ -431,7 +453,7 @@ class WeatherData(object):
         days_between = self.dates_between(date_start, date_end)
     
         # Extract Total Rain Vector:
-        rain_tots = [self.give_tot_rain(date) for date in days_between]
+        rain_tots = [self.give_tot_rain(date, gui=gui) for date in days_between]
         return days_between, rain_tots
     
     def give_daily_solar(self, date_start, date_end):

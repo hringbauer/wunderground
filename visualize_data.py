@@ -86,7 +86,7 @@ class Analyze_WD(object):
         #
         # plt.show()
         
-    def visualize_rain_month(self, date_start=0, date_end=0, date_month=0):
+    def visualize_rain_month(self, date_start=0, date_end=0, date_month=0, gui=None):
         '''Visualize the monthly rain in form of a heatmap.
         start_date, end_date: Date Object.
         If month given; overwrite start_date and end_date'''
@@ -95,12 +95,13 @@ class Analyze_WD(object):
         date_start, date_end = get_month_start_end(date_month)
             
         # 1) Load the Rain        
-        dates, rain_tots = self.wd.give_daily_rain(date_start, date_end)
+        dates, rain_tots = self.wd.give_daily_rain(date_start, date_end, gui=gui)
         rain_tots = np.array(rain_tots, dtype="float")
-        for i in xrange(len(rain_tots)):
-            print("%s: %.1f ml" % (dates[i], rain_tots[i]))
+        #for i in xrange(len(rain_tots)):
+        #    print("%s: %.1f ml" % (dates[i], rain_tots[i]))
         x_vec = range(1, len(dates) + 1)
         
+        # Plot the Rain
         plt.figure(figsize=(10, 5))
         ax = plt.gca()
         rects1 = plt.bar(x_vec, rain_tots, width=0.8)
@@ -112,6 +113,7 @@ class Analyze_WD(object):
         plt.text(0.6, 0.85, 'Total Rain: %.1f ml' % np.sum(rain_tots), transform=ax.transAxes, fontsize=14)
         autolabel(rects1, ax)  # Puts the Label on   
         plt.show()  
+        print("Done!!")
         
     def visualize_solar_month(self, date_start=0, date_end=0, date_month=0):
         '''Visualizes the solar Radiation of a Month.
