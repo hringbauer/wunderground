@@ -415,14 +415,18 @@ class WeatherData(object):
         
         return mean_val
      
-    def give_daily_max(self, date_start, date_end, column="total_rain", minimum=False):
+    def give_daily_max(self, date_start, date_end, column="total_rain", minimum=False, gui=None):
         '''Return daily maximum for given period.
         Give back Numpy Array and array of days'''
         days_between = self.dates_between(date_start, date_end)
         
         # Get maximum/minimum per day:
         # Load all daily column Data into vector:
-        print("Loading Data...")
+        print("Loading Data between: %s and %s" % (str(date_start), str(date_end)))
+        
+        if gui:
+            gui.update_idletasks()
+            
         day_data_vec = [self.give_data_day_clean(day)[column] for day in days_between]
         
         if minimum == True:

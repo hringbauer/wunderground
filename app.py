@@ -35,8 +35,8 @@ class DatWunderApp(tk.Tk):
         
         # Set Window Properties
         self.title("DatWunder by Harald")
-        self.minsize(300, 200)  # Minimal Size 
-        self.geometry("500x400")  # Set it straight away
+        self.minsize(400, 300)  # Minimal Size 
+        self.geometry("700x500")  # Set it straight away
         
         # Set the Status Text
         self.status_text = tk.StringVar()
@@ -102,7 +102,7 @@ class DatWunderApp(tk.Tk):
         self.set_status_text("Completed")
         
     def all(self):
-        self.wd.update_local(all=1)
+        self.wd.update_local(all=1, gui=self)
         self.v_wd = Analyze_WD(self.wd)  # Recreate the Analysis Object
     
     def specific_dates(self):
@@ -117,31 +117,41 @@ class DatWunderApp(tk.Tk):
         print("Here!!")
         
     def monthly_sun(self):
-        date = get_month()
-        self.v_wd.visualize_solar_month(date_month=date) 
+        self.set_status_text("Loading the Data...")
+        date = self.get_month()
+        self.v_wd.visualize_solar_month(date_month=date, gui=self) 
+        self.set_status_text("Waiting")
         
     def maxminmonth(self):
-        date = get_month()
-        dtype = get_data_type()
-        self.v_wd.visualize_max_min_month(date, column=dtype)
+        self.set_status_text("Loading the Data...")
+        date = self.get_month()
+        dtype = self.get_data_type()
+        self.v_wd.visualize_max_min_month(date, column=dtype, gui=self)
+        self.set_status_text("Waiting")
         
     def meanpermonth(self):
-        date = get_month()
+        self.set_status_text("Loading the Data...")
+        date = self.get_month()
         dtype = get_data_type()
         self.v_wd.visualize_mean_month(date_month=date, column=dtype)   
+        self.set_status_text("Waiting...")
         
     def daytemp(self):
-        date = get_day()  # Get the Date (via Input)
-        self.v_wd.visualize_day_data(date, column="temp")
+        date = self.get_day()  # Get the Date (via Input)
+        self.v_wd.visualize_day_data(date, column="temp", gui=self)
         
     def records(self):
-        date = get_month()
-        minimum = int(input("Value? \n(0) Maximum \n(1) Minimum\n"))
-        print(minimum)
-        dtype = get_data_type()
+        self.set_status_text("Loading the Data...")
+        date = self.get_month()
+        minimum = self.ask_minimum()
+        dtype = self.get_data_type()
+        
+        #minimum = int(input("Value? \n(0) Maximum \n(1) Minimum\n"))
+        #print(minimum)
         
         self.v_wd.visualize_records(date_month=date, date_year=0, minimum=minimum,
-          column=dtype)
+          column=dtype, gui=self)
+        self.set_status_text("Waiting...")
     
     def set_status_text(self, text):
         '''Method to set the Status Text'''
@@ -157,8 +167,44 @@ class DatWunderApp(tk.Tk):
         self.wait_window(popup.top)  # Wait until TopLevel of Widget is destroyed
         vals = popup.values
         return datetime.date(year=int(vals[0]), month=int(vals[1]), day=1)
+    
+    def get_day(self):
+        '''Run Window for Day Input'''
+        texts = ["Year", "Month", "Day"]
+        popup = PopupWindow(self, texts=texts)
+        self.wait_window(popup.top)  # Wait until TopLevel of Widget is destroyed
+        vals = popup.values
+        return datetime.date(year=int(vals[0]), month=int(vals[1]), day=int(vals[2]))
         
     ###################
+    
+    def get_data_type(self):
+        '''Call Window for which Datatype'''
+        options = ["temp", "total_rain"]
+        
+        popup = SelectionWindow(self, texts=options)
+        self.wait_window(popup.top)
+        dtype = str(popup.val.get())  # Reads out the String Variable
+        return dtype
+
+    def ask_minimum(self):
+        '''Window to ask for the Minimum'''
+        options = ["Minimum", "Maximum"]
+        
+        popup = SelectionWindow(self, texts=options)
+        self.wait_window(popup.top)
+        val = str(popup.val.get())  # Reads out the String Variable
+        
+        if val =="Minimum":
+            minimum = 1
+        elif val == "Maximum":
+            minimum = 0
+        
+        return minimum
+        
+        
+    ###################
+    
         
 ################################################################
 class TextRedirector(object):
@@ -195,16 +241,6 @@ class PopupWindow(object):
             
         self.b = tk.Button(self.top, text='Enter', command=self.enter)
         self.b.pack(side=tk.TOP)
-    
-    #def __enter__(self):
-    #    return self
-          
-    #def __exit__(self, *err):
-    #    # Destroys all information
-    #    self.top.destroy() # To make Sure
-    #    self.top=0 # Forget about self top!!
-    #    self.fields = []
-    #    self.values = []
         
     def enter(self):
         for i in xrange(self.k):
@@ -212,31 +248,32 @@ class PopupWindow(object):
         self.top.destroy()  # Closes the Dialog Window
 ################################################################
 
-# ## Helper Input Functions; that will get called quite a bit
-def get_day(year=None, month=None, day=None):
-    '''Return the Day Date object'''
-    if year == None:
-        year = input("What year?\n")
-        
-    if month == None:
-        month = input("What month?\n")
-        
-    if day == None:
-        day = input("What day?\n")
-        
-    return datetime.date(year=year, month=month, day=day)
-
-def get_data_type():
-    '''What Data to visualize'''
-    i = input("What Data to you want to analyze?"
-                  "\n(1) Temperature \n(2) Rain Total \n(3) Whateva\n")
-    if i == 1:
-        dtype = "temp"
-        
-    elif i == 2:
-        dtype = "total_rain"
+class SelectionWindow(object):
+    '''Pop Up Window for Input.
+    Texts is array of strings of inputs'''
+    k = 0  # Nr of Fields
+    rb = 0  # Stores the Row Fields (Later on List)
+    val = 0  # The Selected String Variable
     
-    return dtype
+    def __init__(self, master, texts):
+        self.top = tk.Toplevel(master)
+        self.k = len(texts)
+        self.val = tk.StringVar()
+
+        
+        for s in texts:
+            self.rb = tk.Radiobutton(self.top, text=s, variable=self.val, value=s)
+            self.rb.pack(side=tk.TOP, fill=tk.X)
+           
+        # The Button for Enter
+        self.b = tk.Button(self.top, text='Enter', command=self.enter)
+        self.b.pack(side=tk.TOP)
+
+
+    def enter(self):
+        self.top.destroy()  # Closes the Dialog Window
+
+
 
 #################################################################
 # ## Call the main loop
