@@ -7,7 +7,7 @@ It is in a do it yourself adventure style.
 from load_data import WeatherData
 from visualize_data import Analyze_WD
 import datetime
-import Tkinter as tk  # For the graphical user interface
+import tkinter as tk  # For the graphical user interface
 
 def menu_text():
     print("Heyyaa hope u doing well future Harald.")

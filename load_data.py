@@ -12,7 +12,8 @@ All dates are given as DateTime objects
 
 import numpy as np
 import pandas as pd
-import StringIO
+import io as io
+#from io import StringIO
 import requests
 from dateutil import parser
 from dateutil.rrule import rrule, MONTHLY
@@ -184,7 +185,7 @@ class WeatherData(object):
         day = 1
         
         dfs = []
-        for day in xrange(1, calendar.monthrange(date.year, date.month)[1] + 1):
+        for day in range(1, calendar.monthrange(date.year, date.month)[1] + 1):
             df = self.download_data_day(day, date.month, date.year, gui=gui)
             if len(df) == 0:
                 break
@@ -220,17 +221,19 @@ class WeatherData(object):
         # print("Loading Data for Station:  %s" % self.station_name)
         # url = "http://www.wunderground.com/weatherstation/WXDailyHistory.asp?ID={station}&day={day}&month={month}&year={year}&graphspan=day&format=1"
         full_url = self.url.format(station=station, day=day, month=month, year=year)
-        # print("Download in progress from:")
-        # print(full_url)
+        print("Download in progress from:")
+        print(full_url)
         # Request data from wunderground data
         response = requests.get(full_url,
                                 headers={'User-agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'})
         data = response.text
         # remove the excess <br> from the text data
-        data = data.replace('<br>', '')
+        data = data.replace('<br>', '')	
         # Convert to pandas dataframe
-        df = pd.read_csv(StringIO.StringIO(data), index_col=False)
-        
+        df = pd.read_csv(io.StringIO(data), index_col=False)  # Python 2.7 StringIO.StringIO
+		
+        print(df.dtypes) # Debugging
+		
         if len(df) == 0:
              warnings.warn("Error: Empty Data Set!!", RuntimeWarning)
              return df

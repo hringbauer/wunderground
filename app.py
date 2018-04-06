@@ -10,7 +10,8 @@ from load_data import WeatherData
 from visualize_data import Analyze_WD
 import numpy as np
 import datetime
-import Tkinter as tk  # For the graphical user interface
+import tkinter as tk # change to Python 3
+from tkinter import messagebox
 import sys
 
 
@@ -243,7 +244,7 @@ class PopupWindow(object):
         self.b.pack(side=tk.TOP)
         
     def enter(self):
-        for i in xrange(self.k):
+        for i in range(self.k):
             self.values[i] = self.fields[i].get()  # Stores the Values
         self.top.destroy()  # Closes the Dialog Window
 ################################################################

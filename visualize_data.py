@@ -9,7 +9,7 @@ data has methods to give the raw data (as PandasFrames)
 
 import numpy as np
 import pandas as pd
-import StringIO
+from io import StringIO
 import requests
 from dateutil import parser
 from dateutil.rrule import rrule, MONTHLY
@@ -106,7 +106,7 @@ class Analyze_WD(object):
         # 1) Load the Rain        
         dates, rain_tots = self.wd.give_daily_rain(date_start, date_end, gui=gui)
         rain_tots = np.array(rain_tots, dtype="float")
-        #for i in xrange(len(rain_tots)):
+        #for i in range(len(rain_tots)):
         #    print("%s: %.1f ml" % (dates[i], rain_tots[i]))
         x_vec = range(1, len(dates) + 1)
         
@@ -132,7 +132,7 @@ class Analyze_WD(object):
             
         # 1) Load the Rain        
         dates, solar_tots = self.wd.give_daily_solar(date_start, date_end)
-        for i in xrange(len(solar_tots)):
+        for i in range(len(solar_tots)):
             print("%s: %.1f kWh" % (dates[i], solar_tots[i]))
             if gui:
                 gui.update_idletasks()
