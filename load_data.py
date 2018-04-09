@@ -304,8 +304,8 @@ class WeatherData(object):
     def give_data_day(self, date):
         '''Extracts only a day. Takes a date-time as input'''
         df = self.give_data_month(date)
-        dates = np.array(map(give_dt_date, df['date']))  # Extract only the dates
-        
+        dates = np.array(list(map(give_dt_date, df['date'])))  # Extract only the dates
+		
         df = df[dates == date]  # Compare to wished date; not minor information
         
         if len(df) == 0:
@@ -359,7 +359,7 @@ class WeatherData(object):
         
         if len(solar_vals) != 0:
             mid_bin_solar = (solar_vals[1:] + solar_vals[:-1]) / 2.0  # Linear Interpolation
-            times = np.array(map(give_dt_object, time_points), dtype="object")
+            times = np.array(list(map(give_dt_object, time_points)), dtype="object")
             delta_time_points = times[1:] - times[:-1]
             second_delta = np.array([x.total_seconds() for x in delta_time_points], dtype="float")
             # Measures time Difference in Hours and kilo watt
@@ -388,7 +388,7 @@ class WeatherData(object):
         # Calculate the means
         if len(vals) != 0:
             mid_vals = (vals[1:] + vals[:-1]) / 2.0  # Linear Interpolation
-            times = np.array(map(give_dt_object, t), dtype="object")
+            times = np.array(list(map(give_dt_object, t), dtype="object"))
             delta_time_points = times[1:] - times[:-1]  # Calculate bin lengths
             second_delta = np.array([x.total_seconds() for x in delta_time_points], dtype="float")
             

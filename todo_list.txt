@@ -1,0 +1,22 @@
+ToDo List Weather Station:
+
+2018 April 8th:
+It would be nice to have a datatable with daily summary statistics:
+(i.e. the full data broken down to summary statistics):
+
+Need save/load function for this data table
+
+Wished Summary Stats:
+Minimum Temperatue
+Minimum Temperature Time
+Maximum Temperature
+Maximum Temperature Time
+Median Temperature
+Mean Temperature
+Total Rain [mm]
+
+
+
+
+### For GUI:
+Start Up Screen perhaps?
