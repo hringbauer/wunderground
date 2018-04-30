@@ -48,7 +48,7 @@ class Analyze_WD(object):
         # Extract Data
         temps = df[column]
         dates = map(give_dt_object, df['date'])
-        dates = matplotlib.dates.date2num(dates)
+        dates = [matplotlib.dates.date2num(date) for date in dates] # Fix for Python 3.
         
         plt.figure()
         plt.title("Date: %s" % date)

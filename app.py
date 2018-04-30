@@ -5,12 +5,11 @@ Uses a subclass of tkinter to have a GUI!!
 @author: Harald Ringbauer
 '''
 
-
-from load_data import WeatherData
+from load_data import WeatherData, SummaryData
 from visualize_data import Analyze_WD
 import numpy as np
 import datetime
-import tkinter as tk # change to Python 3
+import tkinter as tk  # change to Python 3
 from tkinter import messagebox
 import sys
 
@@ -19,11 +18,13 @@ import sys
 #######################################
 def doNothing():
     '''A small Testing Function'''
-    print("lolol")
+    print("DO NOTHING LINK. I AM LAZY")
+
 
 class DatWunderApp(tk.Tk):
     '''The Graphic Interface for the Wunder App.'''
     wd = 0  # The Data Object
+    sd = 0  # The Summary Statistics Object
     v_wd = 0  # The Visualization Object
     status_text = ""  # The Status Text
        
@@ -33,6 +34,7 @@ class DatWunderApp(tk.Tk):
         # Load the Data and visualization Objects
         self.wd = WeatherData()  # Load the Data
         self.v_wd = Analyze_WD(self.wd)  # Create the Analysis Object
+        self.sd = SummaryData(self.wd) # Create The Statistics Object
         
         # Set Window Properties
         self.title("DatWunder by Harald")
@@ -62,7 +64,7 @@ class DatWunderApp(tk.Tk):
         ### The Summary Statistics Menu ###
         summstat_Menu = tk.Menu(menu)
         menu.add_cascade(label="Statistics", menu=summstat_Menu)
-        summstat_Menu.add_command(label="Placeholder", command=doNothing)
+        summstat_Menu.add_command(label="Calculate Statistics", command=self.calc_summary)
         
         ### The Visualization Menu ###
         visMenu = tk.Menu(menu)  # Create Visualization Menu 
@@ -108,7 +110,6 @@ class DatWunderApp(tk.Tk):
     
     def specific_dates(self):
         raise NotImplementedError("Implement this!")
-        
     
     def monthly_rain(self):
         self.set_status_text("Loading the Data...")
@@ -147,11 +148,20 @@ class DatWunderApp(tk.Tk):
         minimum = self.ask_minimum()
         dtype = self.get_data_type()
         
-        #minimum = int(input("Value? \n(0) Maximum \n(1) Minimum\n"))
-        #print(minimum)
+        # minimum = int(input("Value? \n(0) Maximum \n(1) Minimum\n"))
+        # print(minimum)
         
         self.v_wd.visualize_records(date_month=date, date_year=0, minimum=minimum,
           column=dtype, gui=self)
+        self.set_status_text("Waiting...")
+    
+    #################### Summary Statistics  
+    def calc_summary(self):
+        self.set_status_text("Calculating Summary Statistics...")
+        beg_date = self.get_day()
+        end_date = self.get_day()
+        self.sd.set_summary_statistics(beg_date, end_date)
+        print("Test successful. YOU ROCK HARALD")
         self.set_status_text("Waiting...")
     
     def set_status_text(self, text):
@@ -159,7 +169,7 @@ class DatWunderApp(tk.Tk):
         self.status_text.set(text)
         self.update_idletasks()
         
-        
+    ####################    
     ####################
     def get_month(self):
         '''Input for year/month'''
@@ -196,19 +206,19 @@ class DatWunderApp(tk.Tk):
         self.wait_window(popup.top)
         val = str(popup.val.get())  # Reads out the String Variable
         
-        if val =="Minimum":
+        if val == "Minimum":
             minimum = 1
         elif val == "Maximum":
             minimum = 0
         
         return minimum
         
-        
     ###################
     
         
 ################################################################
 class TextRedirector(object):
+
     def __init__(self, widget, tag="stdout"):
         self.widget = widget
         self.tag = tag
@@ -219,6 +229,7 @@ class TextRedirector(object):
         self.widget.configure(state="disabled")  
         self.widget.see("end") 
 ################################################################
+
 
 ################################################################
 class PopupWindow(object):
@@ -249,6 +260,7 @@ class PopupWindow(object):
         self.top.destroy()  # Closes the Dialog Window
 ################################################################
 
+
 class SelectionWindow(object):
     '''Pop Up Window for Input.
     Texts is array of strings of inputs'''
@@ -260,7 +272,6 @@ class SelectionWindow(object):
         self.top = tk.Toplevel(master)
         self.k = len(texts)
         self.val = tk.StringVar()
-
         
         for s in texts:
             self.rb = tk.Radiobutton(self.top, text=s, variable=self.val, value=s)
@@ -270,10 +281,8 @@ class SelectionWindow(object):
         self.b = tk.Button(self.top, text='Enter', command=self.enter)
         self.b.pack(side=tk.TOP)
 
-
     def enter(self):
         self.top.destroy()  # Closes the Dialog Window
-
 
 
 #################################################################
@@ -283,7 +292,4 @@ if __name__ == "__main__":
     app = DatWunderApp()
     app.mainloop()
     print("Ending the App :-(")
-    
-    
-    
     

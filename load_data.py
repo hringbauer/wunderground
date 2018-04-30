@@ -13,7 +13,7 @@ All dates are given as DateTime objects
 import numpy as np
 import pandas as pd
 import io as io
-#from io import StringIO
+# from io import StringIO
 import requests
 from dateutil import parser
 from dateutil.rrule import rrule, MONTHLY
@@ -24,22 +24,27 @@ import pickle as pickle
 import warnings
 import matplotlib.pyplot as plt
 
+
 # Some helper functions:
 def clean_data(f):
     '''Decorator Function; that gives back only
     the clean data. First call the original function
     and then extract the cleaned data'''
+
     def decorated(*args, **kwargs):
         df = f(*args, **kwargs)  # Call original Function
         df = df[df['solar'] >= 0]
         return df
+
     return decorated
+
 
 def give_dt_date(string):
     '''Give back date from string'''
     dt_object = datetime.datetime.strptime(string, '%Y-%m-%d %H:%M:%S')  # Convert to DateTime
     date = dt_object.date()
     return date
+
 
 def give_dt_object(string):
     '''Give back datetime object from string'''
@@ -55,14 +60,12 @@ class WeatherData(object):
     station_name = "IDRSING3"
     url = "http://www.wunderground.com/weatherstation/WXDailyHistory.asp?ID={station}&day={day}&month={month}&year={year}&graphspan=day&format=1"
     
-    
     local_folder = "./Data/"  # Where to find the data
     last_date = 0  # Last date for which data is available
     fn_last_updated = "last_updated.p"  # Name of File that saves when there was the last update
     
     first_year = 2017
     first_month = 5
-    
     
     def __init__(self, station_name=None, local_folder="", first_year=None, first_month=None):
         '''Initializes the Class. If nothing passed default to Harald's WS;
@@ -83,7 +86,6 @@ class WeatherData(object):
             self.first_month = first_month
             
         # self.load_data(self.station_name, day=4, month=5, year=2017)
-        
     
     def save_last_date(self, date):
         '''Pickle the last save date.'''
@@ -167,7 +169,6 @@ class WeatherData(object):
         
         # Save: 
         df.to_csv(path)
-        
     
     def load_local(self, date):
         '''Method to load local Data from .csv'''
@@ -194,8 +195,6 @@ class WeatherData(object):
             print("Data Rows per Month loaded: %i" % len(dfs))
         df = pd.concat(dfs, ignore_index=True)
         return df
-    
-        
          
     def download_data_day(self, day, month, year, station="", gui=None):
         """
@@ -232,7 +231,7 @@ class WeatherData(object):
         # Convert to pandas dataframe
         df = pd.read_csv(io.StringIO(data), index_col=False)  # Python 2.7 StringIO.StringIO
 		
-        print(df.dtypes) # Debugging
+        print(df.dtypes)  # Debugging
 		
         if len(df) == 0:
              warnings.warn("Error: Empty Data Set!!", RuntimeWarning)
@@ -278,7 +277,6 @@ class WeatherData(object):
         '''Cleans missing columns'''
         df = df[df['solar'] >= 0]
         return df
-    
     
     def give_data_month(self, date):
         '''Loads data from month in date (date object)
@@ -365,7 +363,6 @@ class WeatherData(object):
             # Measures time Difference in Hours and kilo watt
             tot_solar = np.sum(second_delta * mid_bin_solar) / (1000.0 * 3600.0)
             
-            
         else:
             tot_solar = -0.1  # Default rain value to -1.
         return tot_solar
@@ -376,8 +373,6 @@ class WeatherData(object):
         day_array = self.dates_between(start_date, end_date)
         mean_array = np.array([self.give_day_mean(date, column) for date in day_array])
         return day_array, mean_array
-        
-        
         
     def give_day_mean(self, date, column=""):
         '''Gives the daily mean of a Value (For instance Temperature)'''
@@ -411,10 +406,10 @@ class WeatherData(object):
                 mean_val = np.sum(second_delta * mid_vals) / tot_sec  # Average Value
               
         else:
-            raise RuntimeWarning("Data does not exist!!")
             print("For Date:")
             print(date)
             mean_val = np.nan  # Default rain value to -1.
+            raise RuntimeWarning("Data does not exist!!")
         
         return mean_val
      
@@ -440,10 +435,8 @@ class WeatherData(object):
             
         else:
             raise ValueError("Min. must be Boolean!!")
-        
             
         return np.array(res_vec), np.array(days_between)  # Return the Results and the days
-        
         
     def give_daily_rain(self, date_start, date_end, gui=None):
         '''Give daily rain in Period from date_start to date_end.
@@ -482,28 +475,25 @@ class WeatherData(object):
         delta = d2 - d1  # timedelta
         days_between = [d1 + datetime.timedelta(days=i) for i in range(delta.days + 1)]
         return days_between
-
         
     @clean_data
     def give_data_day_clean(self, date):
         '''Extract a Day cleaned up'''
         return self.give_data_day(date)
+
     
 #################################
-class SummaryData(object):
+class SummaryData(WeatherData):
     '''Class that calculates and loads
     Summary Statistics from Data for every Day/Month/Year
-    Data is stored in csv.tables that are accessed via Pandas.
+    Data is stored in csv.tables that are handled via Pandas.
     Columns: DayMinT, DayMaxT, DayMeanT, DayTotR, DayTotS
     
     It is different than Weatherdata; as here processed Data is looked into.
     
     '''
-    local_folder = "./Data/Summary/"  # Where to find the data
+    stats_folder = "./Data/Summary/"  # Where to find the data
     fn_last_updated = "last_updated.p"  # Name of File that saves when there was the last update
-    local_file_name_days = "/sum_days.csv"
-    local_file_name_months = "/sum_months.csv"
-    local_file_name_years = "/sum_years.csv"
     
     last_date = 0  # Last date for which data is available
     
@@ -514,6 +504,8 @@ class SummaryData(object):
     last_data = ""
     
     wd = 0  # The Weather station data.
+    
+    columns = ["MinT", "MaxT", "MeanT", "TotR", "TotS"]  # The Columns of the Dataframe
 
     def __init__(self, wd):
         '''Initializes the Class. If nothing passed default to Harald's WS;
@@ -529,7 +521,6 @@ class SummaryData(object):
         # Find out last day of data
         last_data_date = wd.load_last_date()
         
-        
         # Assert Last day > Last Day Save
         assert(last_save_date <= last_data_date)
         
@@ -538,20 +529,19 @@ class SummaryData(object):
         
         # Add them to Pandas Data Table
         
-        
         # Save Everything
         save_last_date(date=last_data_date)
         
     def save_last_date(self, date):
         '''Pickle the last save date.'''
-        path = self.local_folder + self.fn_last_updated
+        path = self.stats_folder + self.fn_last_updated
         
         print("Saving New Last Date. Year: %i Month: %i" % (date.year, date.month))
         pickle.dump(date, open(path, "wb"))
         
     def load_last_date(self):
         '''Pickle loads the last save date.'''
-        path = self.local_folder + self.fn_last_updated
+        path = self.stats_folder + self.fn_last_updated
         
         # If it exists; otherwise go back all the way to the beginning
         if os.path.exists(path):  
@@ -562,10 +552,78 @@ class SummaryData(object):
         print("Loading last Save Date. Year: %i Month: %i" % (date.year, date.month))
         return date
     
+    # ## Do Summary Statistics calculations. Overrides Existing Data!
+    # For every year, save Pandas Summary statistics with column as days
+    # I.e. 365xNr of columns
+    # Columns to save: Daily Total Rain. Minimum Temperature, Max Temperature, Max. Wind. Average Temp.
     
-    def calculate_summary_statistics_day(self, start_date, end_date):
+    # First Methods to load and save the data
+    def create_date_frame_year(self, date):
+        """Create Statistics Dataframe"""
+        b = datetime.date(date.year, 1, 1)  # Beginning
+        e = datetime.date(date.year, 12, 31)  # End
+        index = pd.date_range(b, e, freq='D')
+        df = pd.DataFrame(index=index, columns=self.columns)  # Create Data Frame with empty 
+        return df
+        
+    def save_data_frame(self, df, date):
+        """Save the Statistics Data Frame"""
+        path = self.stats_folder + str(date.year) + ".csv"  # Create the right Year!
+        
+        directory = os.path.dirname(path)  # Extract Directory
+        if not os.path.exists(directory):  # Creates Folder if not already existing
+            os.makedirs(directory)
+            
+        df.to_csv(path)  
+        
+    def load_data_frame(self, date):
+        """Load the Statistics Data Frame"""
+        assert(date.year >= self.first_year)  # Sanity Check
+        
+        path = self.stats_folder + str(date.year) + ".csv"
+        
+        # Create Directory if not existent
+        directory = os.path.dirname(path)  # Extract Directory
+        if not os.path.exists(directory):  # Creates Folder if not already existing
+            os.makedirs(directory)
+            
+        # Create File if non existent
+        if not os.path.exists(path):  
+            df = self.create_date_frame_year(date)
+            
+        else:
+            df = pd.read_csv(path, parse_dates=[0], index_col=[0])  # Reads the .csv
+            
+        return df
+   
+    def set_summary_statistics(self, start_date, end_date):
         '''Calculate Summary Statistics Day'''
-        raise NotImplementedError("Implement this!")
+        if start_date.year != end_date.year:
+            warnings.warn("Must be same year!!", RuntimeWarning)
+            return
+        
+        # Load the right Data Frame
+        ds = self.load_data_frame(start_date)  # Loads the Data Frame for the first year
+        
+        days_between = self.dates_between(start_date, end_date)  # Calculate Days between
+       
+        for date in days_between:
+            print("Doing Summary Statistics for Day: %s" % str(date))
+            stats = self.summary_statistics_day(date)  # Calculate Summary Statistics AT THE MOMENT TOTAL RAIN FOR TEST LATER MORE
+            ds.loc[date] = stats  # Sets the Summary Statistics
+        
+        self.save_data_frame(ds, start_date)  # Save to .csv
+    
+    def summary_statistics_day(self, date):
+        """Calculates the summary statistics of a single day"""
+        stats = np.array([0.0, 0.0, 0.0, 0.0, 0.0])  # Empty Numpy Array
+        df = self.give_data_day_clean(date)  # Loads the Dataframe
+        
+        # Calculate the Minimum and Maximum Temperateure
+        stats[0] = np.min(df["temp"])
+        stats[1] = np.max(df["temp"])
+
+        return  stats
         
     def give_summary_statistics_day(self, start, end_date, column):
         '''Load Summary Statistics Day. Give back array.'''
@@ -578,7 +636,6 @@ class SummaryData(object):
     def give_summary_statistics_year(self, start_date, end_date, column="Total"):
         '''Load Summary Statistics Year. Give back array.'''
         raise NotImplementedError("Implement this!")
-        
 
 
 #################################
@@ -591,7 +648,6 @@ if __name__ == "__main__":
     # df=wd.give_data_month(date)
     # df = wd.give_data_month_clean(date)
     df = wd.give_data_day_clean(date)
-    
     
     plt.figure()
     plt.plot(df["temp"], 'ro')
@@ -608,6 +664,4 @@ if __name__ == "__main__":
     # wd.download_data_day(1, 5, 2017)
     # data = wd.give_clean_data()
     # print(data.head(1))
-
-    
         
