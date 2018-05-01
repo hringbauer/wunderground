@@ -302,8 +302,8 @@ class WeatherData(object):
     def give_data_day(self, date):
         '''Extracts only a day. Takes a date-time as input'''
         df = self.give_data_month(date)
-        dates = np.array(list(map(give_dt_date, df['date'])))  # Extract only the dates
-		
+        dates = np.array([give_dt_date(date) for date in df['date']])  # Extract only the dates
+        
         df = df[dates == date]  # Compare to wished date; not minor information
         
         if len(df) == 0:
@@ -375,7 +375,8 @@ class WeatherData(object):
         return day_array, mean_array
         
     def give_day_mean(self, date, column=""):
-        '''Gives the daily mean of a Value (For instance Temperature)'''
+        '''Gives the daily mean of a Value (For instance Temperature).
+        Uses Trapez Rule, i.e. midbin values time width'''
         df = self.give_data_day_clean(date)
         vals = df[column].values
         t = df["date"]
@@ -383,7 +384,7 @@ class WeatherData(object):
         # Calculate the means
         if len(vals) != 0:
             mid_vals = (vals[1:] + vals[:-1]) / 2.0  # Linear Interpolation
-            times = np.array(list(map(give_dt_object, t), dtype="object"))
+            times = np.array(list(map(give_dt_object, t)), dtype="object")
             delta_time_points = times[1:] - times[:-1]  # Calculate bin lengths
             second_delta = np.array([x.total_seconds() for x in delta_time_points], dtype="float")
             
@@ -616,18 +617,25 @@ class SummaryData(WeatherData):
     
     def summary_statistics_day(self, date):
         """Calculates the summary statistics of a single day"""
-        stats = np.array([0.0, 0.0, 0.0, 0.0, 0.0])  # Empty Numpy Array
+        stats = np.zeros(len(self.columns)).astype("float")  # Empty Numpy Array
         df = self.give_data_day_clean(date)  # Loads the Dataframe
         
         # Calculate the Minimum and Maximum Temperateure
         stats[0] = np.min(df["temp"])
         stats[1] = np.max(df["temp"])
-
+        
+        # Calculate the Mean Temperature
+        stats[2] = self.give_day_mean(date, column="temp")
+        # Calculate the total Rain [ml]
+        stats[3] = self.give_tot_rain(date)
+        # Calculate the total Sunshine
+        stats[4] = self.give_tot_solar(date)
         return  stats
         
-    def give_summary_statistics_day(self, start, end_date, column):
+    def give_summary_statistics_day(self, date, column):
         '''Load Summary Statistics Day. Give back array.'''
-        raise NotImplementedError("Implement this!")
+        ds = self.load_data_frame(start_date)
+        return ds.loc[date]
         
     def calculate_summary_statistics_year(self, start_date, end_date):
         '''Calculate Summary Statistics Year'''
