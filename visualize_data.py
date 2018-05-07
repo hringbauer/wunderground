@@ -39,7 +39,7 @@ class Analyze_WD(object):
         '''Initializes the Class. If nothing passed default to Harald's WS'''
         self.wd = wd_object
     
-    def visualize_day_data(self, date, column="temp", gui=None):
+    def visualize_day_data(self, date, column="temp"):
         '''Visualizes the Temperature for a given date.
         Date: datetime.date object'''
         print("Visualizing Day: %s" % str(date))
@@ -47,7 +47,8 @@ class Analyze_WD(object):
         
         # Extract Data
         temps = df[column]
-        dates = map(give_dt_object, df['date'])
+        dates = df.index  #  Extract the datetime objects
+        print(dates)
         dates = [matplotlib.dates.date2num(date) for date in dates] # Fix for Python 3.
         
         plt.figure()
@@ -65,16 +66,13 @@ class Analyze_WD(object):
         print(rain_vec)
         print(len(rain_vec))
         
-    def visualize_max_min_month(self, date, column="temp", gui=None):
+    def visualize_max_min_month(self, date, column="temp"):
         '''Plot Minimum and Maximum of a given Month '''
         print("Getting Mins...")
-        if gui:
-            gui.update_idletasks()
+
         mins = self.wd.give_daily_maximum_month(date, column=column, minimum=1)
         
         print("Getting Maxs...")
-        if gui:
-            gui.update_idletasks()
         maxs = self.wd.give_daily_maximum_month(date, column=column, minimum=0)
         
         days = np.arange(len(maxs)) + 1
@@ -95,7 +93,7 @@ class Analyze_WD(object):
         #
         # plt.show()
         
-    def visualize_rain_month(self, date_start=0, date_end=0, date_month=0, gui=None):
+    def visualize_rain_month(self, date_start=0, date_end=0, date_month=0):
         '''Visualize the monthly rain in form of a heatmap.
         start_date, end_date: Date Object.
         If month given; overwrite start_date and end_date'''
@@ -104,7 +102,7 @@ class Analyze_WD(object):
         date_start, date_end = get_month_start_end(date_month)
             
         # 1) Load the Rain        
-        dates, rain_tots = self.wd.give_daily_rain(date_start, date_end, gui=gui)
+        dates, rain_tots = self.wd.give_daily_rain(date_start, date_end)
         rain_tots = np.array(rain_tots, dtype="float")
         #for i in range(len(rain_tots)):
         #    print("%s: %.1f ml" % (dates[i], rain_tots[i]))
@@ -124,7 +122,7 @@ class Analyze_WD(object):
         plt.show()  
         print("Done!!")
         
-    def visualize_solar_month(self, date_start=0, date_end=0, date_month=0, gui=None):
+    def visualize_solar_month(self, date_start=0, date_end=0, date_month=0):
         '''Visualizes the solar Radiation of a Month.
         Depicts Integrals of Daily Values'''
         # 0) If month given; update start_date and end_date
@@ -134,8 +132,6 @@ class Analyze_WD(object):
         dates, solar_tots = self.wd.give_daily_solar(date_start, date_end)
         for i in range(len(solar_tots)):
             print("%s: %.1f kWh" % (dates[i], solar_tots[i]))
-            if gui:
-                gui.update_idletasks()
         x_vec = range(1, len(dates) + 1)
         
         plt.figure(figsize=(10, 5))
@@ -151,7 +147,7 @@ class Analyze_WD(object):
         plt.show() 
     
     def visualize_records(self, date_start=0, date_end=0, date_month=0, date_year=0, minimum=False,
-                          column="Temp", gui=None):
+                          column="Temp"):
         '''Print and return the maximum Value of a given Period
         Minimum: Print and return Minimum'''
         
@@ -161,7 +157,7 @@ class Analyze_WD(object):
         elif date_year:
             date_start, date_end = get_year_start_end(date_year)
             
-        res, days = self.wd.give_daily_max(date_start, date_end, column=column, minimum=minimum, gui = gui)
+        res, days = self.wd.give_daily_max(date_start, date_end, column=column, minimum=minimum)
         
         # Remove Days with missing data
         inds_fin = np.isfinite(res)
@@ -177,9 +173,6 @@ class Analyze_WD(object):
         
         print("Extreme Value: %.4f" % extreme)
         print("On Day: %s" % day)
-        
-        if gui:
-            gui.update_idletasks()
             
     def visualize_mean_month(self, date_month=None, start_date=None, end_date=None, column="rain", smoothing=False):
         '''Visualizes the mean Values per Month

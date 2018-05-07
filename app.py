@@ -32,9 +32,9 @@ class DatWunderApp(tk.Tk):
         tk.Tk.__init__(self)
         
         # Load the Data and visualization Objects
-        self.wd = WeatherData()  # Load the Data
+        self.wd = WeatherData(gui=self)  # Load the Data
         self.v_wd = Analyze_WD(self.wd)  # Create the Analysis Object
-        self.sd = SummaryData(self.wd) # Create The Statistics Object
+        self.sd = SummaryData(self.wd, gui=self) # Create The Statistics Object
         
         # Set Window Properties
         self.title("DatWunder by Harald")
@@ -56,7 +56,7 @@ class DatWunderApp(tk.Tk):
         dataMenu.add_command(label="All Days", command=self.all)
         dataMenu.add_command(label="Since Last Update", command=self.lastupdate)
         dataMenu.add_command(label="Specific Date", command=self.specific_dates)
-        dataMenu.add_separator()  # Creates a Line
+        
         dataMenu.add_command(label="Exit", command=quit)
         
         # subMenu.add_command(label="Exit", command=doNothing)
@@ -65,6 +65,8 @@ class DatWunderApp(tk.Tk):
         summstat_Menu = tk.Menu(menu)
         menu.add_cascade(label="Statistics", menu=summstat_Menu)
         summstat_Menu.add_command(label="Calculate Statistics", command=self.calc_summary)
+        summstat_Menu.add_command(label="Since Last Update", command=self.calc_summary_update)
+        dataMenu.add_separator()  # Creates a Line
         
         ### The Visualization Menu ###
         visMenu = tk.Menu(menu)  # Create Visualization Menu 
@@ -114,21 +116,21 @@ class DatWunderApp(tk.Tk):
     def monthly_rain(self):
         self.set_status_text("Loading the Data...")
         date = self.get_month()
-        self.v_wd.visualize_rain_month(date_month=date, gui=self)
+        self.v_wd.visualize_rain_month(date_month=date)
         self.set_status_text("Waiting")
         print("Here!!")
         
     def monthly_sun(self):
         self.set_status_text("Loading the Data...")
         date = self.get_month()
-        self.v_wd.visualize_solar_month(date_month=date, gui=self) 
+        self.v_wd.visualize_solar_month(date_month=date) 
         self.set_status_text("Waiting")
         
     def maxminmonth(self):
         self.set_status_text("Loading the Data...")
         date = self.get_month()
         dtype = self.get_data_type()
-        self.v_wd.visualize_max_min_month(date, column=dtype, gui=self)
+        self.v_wd.visualize_max_min_month(date, column=dtype)
         self.set_status_text("Waiting")
         
     def meanpermonth(self):
@@ -140,7 +142,7 @@ class DatWunderApp(tk.Tk):
         
     def daytemp(self):
         date = self.get_day()  # Get the Date (via Input)
-        self.v_wd.visualize_day_data(date, column="temp", gui=self)
+        self.v_wd.visualize_day_data(date, column="temp")
         
     def records(self):
         self.set_status_text("Loading the Data...")
@@ -163,14 +165,19 @@ class DatWunderApp(tk.Tk):
         self.sd.set_summary_statistics(beg_date, end_date)
         print("Test successful. YOU ROCK HARALD")
         self.set_status_text("Waiting...")
+        
+    def calc_summary_update(self):
+        self.set_status_text("Calculating Summary Statistics since last update...")
+        self.sd.update_sum_days()
+        print("Test successful. YOU ROCK HARD HARALD")
+        self.set_status_text("Waiting...")
+    #################### Helper Functions
     
     def set_status_text(self, text):
         '''Method to set the Status Text'''
         self.status_text.set(text)
         self.update_idletasks()
         
-    ####################    
-    ####################
     def get_month(self):
         '''Input for year/month'''
         texts = ["Year", "Month"]
