@@ -32,12 +32,14 @@ class Analyze_WD(object):
     Stores WeatherData object that has methods to access the data and 
     can give it
     '''
+    wd = 0  # For the Data
+    gui = 0 # For the GUI
     
-    wd = 0
-    
-    def __init__(self, wd_object):
+    def __init__(self, wd_object, gui=None):
         '''Initializes the Class. If nothing passed default to Harald's WS'''
         self.wd = wd_object
+        
+        if gui: self.gui = gui
     
     def visualize_day_data(self, date, column="temp"):
         '''Visualizes the Temperature for a given date.

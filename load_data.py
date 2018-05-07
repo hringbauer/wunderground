@@ -561,7 +561,7 @@ class SummaryData(WeatherData):
         ends = [datetime.date(y, 12, 31) for y in years]
         begins[0] = last_save_date  # Adjust First
         ends[-1] = last_data_date  # and last year
-        
+
         for i in range(len(years)):
             print("Doing Year: %i" % years[i])
             self.set_summary_statistics(begins[i], ends[i])
@@ -640,10 +640,14 @@ class SummaryData(WeatherData):
         ds = self.load_data_frame(start_date)  # Loads the Data Frame for the first year
         
         days_between = self.dates_between(start_date, end_date)  # Calculate Days between
+        if self.gui: 
+            print(type(self.gui.pb))
+            self.gui.pb['maximum'] = len(days_between)
        
         for date in days_between:
             print("Doing Summary Statistics for Day: %s" % str(date))
-            if self.gui:
+            if self.gui:  # Make Progressbar!
+                self.gui.pb.step()
                 self.gui.update_idletasks()
             stats = self.summary_statistics_day(date)  # Calculate Summary Statistics AT THE MOMENT TOTAL RAIN FOR TEST LATER MORE
             ds.loc[date] = stats  # Sets the Summary Statistics

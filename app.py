@@ -10,7 +10,7 @@ from visualize_data import Analyze_WD
 import numpy as np
 import datetime
 import tkinter as tk  # change to Python 3
-from tkinter import messagebox
+from tkinter import messagebox, ttk
 import sys
 
 
@@ -33,7 +33,7 @@ class DatWunderApp(tk.Tk):
         
         # Load the Data and visualization Objects
         self.wd = WeatherData(gui=self)  # Load the Data
-        self.v_wd = Analyze_WD(self.wd)  # Create the Analysis Object
+        self.v_wd = Analyze_WD(self.wd, gui=self)  # Create the Analysis Object
         self.sd = SummaryData(self.wd, gui=self) # Create The Statistics Object
         
         # Set Window Properties
@@ -168,8 +168,13 @@ class DatWunderApp(tk.Tk):
         
     def calc_summary_update(self):
         self.set_status_text("Calculating Summary Statistics since last update...")
+        self.pb = ttk.Progressbar(self, orient="horizontal",
+                                        length=350, mode="determinate") # Make progressbar
+        self.pb.pack()
+        
         self.sd.update_sum_days()
         print("Test successful. YOU ROCK HARD HARALD")
+        self.pb.destroy()  # Delete Progressbar
         self.set_status_text("Waiting...")
     #################### Helper Functions
     
