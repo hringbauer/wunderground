@@ -33,8 +33,8 @@ class DatWunderApp(tk.Tk):
         
         # Load the Data and visualization Objects
         self.wd = WeatherData(gui=self)  # Load the Data
-        self.v_wd = Analyze_WD(self.wd, gui=self)  # Create the Analysis Object
         self.sd = SummaryData(self.wd, gui=self) # Create The Statistics Object
+        self.v_wd = Analyze_WD(self.wd, sd=self.sd, gui=self)  # Create the Analysis Object
         
         # Set Window Properties
         self.title("DatWunder by Harald")
@@ -76,6 +76,7 @@ class DatWunderApp(tk.Tk):
         visMenu.add_separator()  # Creates a Line
         visMenu.add_command(label="Max/Min per Month", command=self.maxminmonth)
         visMenu.add_command(label="Day Temperature", command=self.daytemp)
+        visMenu.add_command(label="Period Temperature", command=self.period_temp)
         visMenu.add_separator()  # Creates a Line
         visMenu.add_command(label="Show Records", command=self.records)
         
@@ -102,12 +103,12 @@ class DatWunderApp(tk.Tk):
     # Write the Functions for the Menu
     def lastupdate(self):
         self.set_status_text("Loading the Data")
-        self.wd.update_local(gui=self)
+        self.wd.update_local()
         self.v_wd = Analyze_WD(self.wd)  # Recreate the Analysis Object
         self.set_status_text("Completed")
         
     def all(self):
-        self.wd.update_local(all=1, gui=self)
+        self.wd.update_local(all=1)
         self.v_wd = Analyze_WD(self.wd)  # Recreate the Analysis Object
     
     def specific_dates(self):
@@ -144,6 +145,11 @@ class DatWunderApp(tk.Tk):
         date = self.get_day()  # Get the Date (via Input)
         self.v_wd.visualize_day_data(date, column="temp")
         
+    def period_temp(self):
+        sdt = self.get_day()
+        edt = self.get_day()
+        self.v_wd.visualize_temp_period(start_date=sdt, end_date=edt)
+        
     def records(self):
         self.set_status_text("Loading the Data...")
         date = self.get_month()
@@ -154,7 +160,7 @@ class DatWunderApp(tk.Tk):
         # print(minimum)
         
         self.v_wd.visualize_records(date_month=date, date_year=0, minimum=minimum,
-          column=dtype, gui=self)
+          column=dtype)
         self.set_status_text("Waiting...")
     
     #################### Summary Statistics  

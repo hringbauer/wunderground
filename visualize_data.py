@@ -32,13 +32,14 @@ class Analyze_WD(object):
     Stores WeatherData object that has methods to access the data and 
     can give it
     '''
-    wd = 0  # For the Data
+    wd = 0  # For the exact Data
+    sd = 0  # For the statistical Data
     gui = 0 # For the GUI
     
-    def __init__(self, wd_object, gui=None):
+    def __init__(self, wd, sd=None, gui=None):
         '''Initializes the Class. If nothing passed default to Harald's WS'''
-        self.wd = wd_object
-        
+        self.wd = wd
+        if sd: self.sd = sd
         if gui: self.gui = gui
     
     def visualize_day_data(self, date, column="temp"):
@@ -50,7 +51,6 @@ class Analyze_WD(object):
         # Extract Data
         temps = df[column]
         dates = df.index  #  Extract the datetime objects
-        print(dates)
         dates = [matplotlib.dates.date2num(date) for date in dates] # Fix for Python 3.
         
         plt.figure()
@@ -206,6 +206,32 @@ class Analyze_WD(object):
         plt.xlabel("Day", fontsize=14)
         ax = plt.gca()
         plt.text(0.6, 0.85, 'Mean Value: %.2f' % np.nanmean(res), transform=ax.transAxes, fontsize=14)
+        plt.show()
+        
+        
+    ##############################################################
+    ##############################################################
+    # Visualize Statistics
+    
+    def visualize_temp_period(self, date_month=None, start_date=None, end_date=None, smoothing=False):
+        """Visualize Temperature Data for a whole time period, from start o end_date"""
+        if date_month:
+            f,l = calendar.monthrange(date_month.year,date_month.month) # Extract first and last day
+            start_date=date_month.replace(day=f)
+            end_date=date_month.replace(day=l)
+            
+        df = self.sd.give_summary_statistics(start_date, end_date)
+        # ["MinT", "MaxT", "MeanT", "TotR", "TotS"]
+        
+        dates = df.index
+        
+        plt.figure(figsize=(12,6))
+        plt.plot_date(dates, df.MinT, marker="o", linestyle="", label="Min Temp", color="steelblue")
+        plt.plot_date(dates, df.MeanT,  marker="o", linestyle="--", label="Mean Temp", color="goldenrod")
+        plt.plot_date(dates, df.MaxT, marker="o", linestyle="", label="Max Temp", color="firebrick")
+        plt.legend()
+        plt.ylabel("Temp. [C]")
+        plt.xlabel("Date")
         plt.show()
         
         

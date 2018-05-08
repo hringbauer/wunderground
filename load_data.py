@@ -154,8 +154,8 @@ class WeatherData(object):
         print("Download starting from:")
         print(self.station_name)
         
-        if gui:
-            gui.update_idletasks()
+        if self.gui:
+            self.gui.update_idletasks()
         
         if all == 0:
             self.save_local(begin_date, end_date)
@@ -173,8 +173,8 @@ class WeatherData(object):
         month = date.month
         print("Downloading Year: %i Month: %i" % (year, month))
         
-        if gui:
-            gui.update_idletasks()
+        if self.gui:
+            self.gui.update_idletasks()
         
         df = self.download_data_month(date)
         
@@ -199,7 +199,7 @@ class WeatherData(object):
             if len(df) == 0:
                 break
             dfs.append(df)
-        if gui:
+        if self.gui:
             print("Data Rows per Month loaded: %i" % len(dfs))
         df = pd.concat(dfs, ignore_index=True)
         return df
@@ -637,11 +637,10 @@ class SummaryData(WeatherData):
             return
         
         # Load the right Data Frame
-        ds = self.load_data_frame(start_date)  # Loads the Data Frame for the first year
+        ds = self.load_data_frame(start_date)  # Loads the Data Frame for the year
         
         days_between = self.dates_between(start_date, end_date)  # Calculate Days between
         if self.gui: 
-            print(type(self.gui.pb))
             self.gui.pb['maximum'] = len(days_between)
        
         for date in days_between:
@@ -670,18 +669,16 @@ class SummaryData(WeatherData):
         stats[4] = self.give_tot_solar(date, df=df)
         return  stats
         
-    def give_summary_statistics_day(self, date, column):
-        '''Load Summary Statistics Day. Give back array.'''
-        ds = self.load_data_frame(start_date)
-        return ds.loc[date]
+    def give_summary_statistics(self, start_date, end_date=None):
+        '''Load Summary Statistics Day. Give back array. For the moment: Has to be the same year'''
+        if end_date==None:
+            end_date=start_date
         
-    def calculate_summary_statistics_year(self, start_date, end_date):
-        '''Calculate Summary Statistics Year'''
-        raise NotImplementedError("Implement this!")
-    
-    def give_summary_statistics_year(self, start_date, end_date, column="Total"):
-        '''Load Summary Statistics Year. Give back array.'''
-        raise NotImplementedError("Implement this!")
+        df = self.load_data_frame(start_date)
+        df.tz_localize("Europe/Vienna") # Add Time Zone Information
+        
+        ds = df[str(start_date):str(end_date)] # Extract the right substring
+        return ds
 
 
 #################################
