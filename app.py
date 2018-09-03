@@ -54,9 +54,8 @@ class DatWunderApp(tk.Tk):
         dataMenu = tk.Menu(menu)
         menu.add_cascade(label="Data", menu=dataMenu)
         dataMenu.add_command(label="All Days", command=self.all)
+        dataMenu.add_command(label="Load Month", command=self.load_month)
         dataMenu.add_command(label="Since Last Update", command=self.lastupdate)
-        dataMenu.add_command(label="Specific Date", command=self.specific_dates)
-        
         dataMenu.add_command(label="Exit", command=quit)
         
         # subMenu.add_command(label="Exit", command=doNothing)
@@ -107,12 +106,17 @@ class DatWunderApp(tk.Tk):
         self.v_wd = Analyze_WD(self.wd)  # Recreate the Analysis Object
         self.set_status_text("Completed")
         
+    def load_month(self):
+        self.set_status_text("Loading the Data of Month")
+        
+        month = self.get_month()
+        self.wd.local_save_month(month)
+        self.v_wd = Analyze_WD(self.wd)  # Recreate the Analysis Object
+        self.set_status_text("Completed")
+        
     def all(self):
         self.wd.update_local(all=1)
         self.v_wd = Analyze_WD(self.wd)  # Recreate the Analysis Object
-    
-    def specific_dates(self):
-        raise NotImplementedError("Implement this!")
     
     def monthly_rain(self):
         self.set_status_text("Loading the Data...")

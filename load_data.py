@@ -150,7 +150,7 @@ class WeatherData(object):
             end_date = datetime.datetime.now()
             
         begin_date = self.load_last_date()  # Load the last time something was updated 
-        
+            
         print("Download starting from:")
         print(self.station_name)
         
@@ -168,7 +168,7 @@ class WeatherData(object):
         
     def local_save_month(self, date):
         '''Locally saves data of a specific month.
-        Date is dateutil object; data is save to its month.'''
+        Date: dateutil object; Load data from its month'''
         year = date.year
         month = date.month
         print("Downloading Year: %i Month: %i" % (year, month))
@@ -196,9 +196,8 @@ class WeatherData(object):
         dfs = []
         for day in range(1, calendar.monthrange(date.year, date.month)[1] + 1):
             df = self.download_data_day(day, date.month, date.year)
-            if len(df) == 0:
-                break
-            dfs.append(df)
+            if len(df) != 0: # only Append if non-zero data
+                dfs.append(df)
         if self.gui:
             print("Data Rows per Month loaded: %i" % len(dfs))
         df = pd.concat(dfs, ignore_index=True)
@@ -260,7 +259,15 @@ class WeatherData(object):
         df1['wind_gust'] = df['WindSpeedGustKMH'].astype(float)
         df1['pressure'] = df['PressurehPa'].astype(float)
         df1['humidity'] = df['Humidity'].astype(float)
-        df1['solar'] = df['SolarRadiationWatts/m^2'].astype(float)
+        
+        # Hack to deal with the fact that sometimes Solar is not stored!!
+        sol_col_name = 'SolarRadiationWatts/m^2'
+        if sol_col_name in df:
+            sol_col = df[sol_col_name].astype(float)
+        else:
+            print("Solar Column not found. Setting it to 0!!")
+            sol_col = np.zeros(len(df))
+        df1['solar'] = sol_col
         df1['dewpoint'] = df['DewpointC'].astype(float)
         df1['station'] = df['station'].astype(str)
         
@@ -429,7 +436,7 @@ class WeatherData(object):
             print("For Date:")
             print(date)
             mean_val = np.nan  # Default rain value to -1.
-            raise RuntimeWarning("Data does not exist!!")
+            warnings.warn("Data does not exist!!", RuntimeWarning)
         
         return mean_val
      
