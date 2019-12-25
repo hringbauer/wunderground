@@ -230,16 +230,29 @@ class WeatherData(object):
         print("Download in progress from:")
         print(full_url)
         # Request data from wunderground data
-        response = requests.get(full_url,
-                                headers={'User-agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'})
-        data = response.text
-        # remove the excess <br> from the text data
-        data = data.replace('<br>', '')	
-        # Convert to pandas dataframe
-        df = pd.read_csv(io.StringIO(data), index_col=False)  # Python 2.7 StringIO.StringIO
+        
+        def download():
+            response = requests.get(full_url,
+                                    headers={'User-agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'})
+            data = response.text
+            # remove the excess <br> from the text data
+            data = data.replace('<br>', '')	
+            # Convert to pandas dataframe
+            return pd.read_csv(io.StringIO(data), index_col=False)  # Python 2.7 StringIO.StringIO
 		
+        counter = 0
+        ## Try several time to download if unstable internet:
+        while True:
+            df = download()
+            counter+=1
+            if ('TemperatureC' in df) or (counter>=10):
+                break
+            else:
+                print("TemperatureC not found. Trying again. Check country IP.")
+           
         print(df.dtypes)  # Debugging
-		
+        
+        
         if len(df) == 0:
              warnings.warn("Error: Empty Data Set!!", RuntimeWarning)
              return df
@@ -274,7 +287,6 @@ class WeatherData(object):
         # print("Observations: %i" % df.shape[0])
         # print(df1.dtypes)
         # self.data = df1
-        
         return df1
         
     def give_clean_data(self, df):

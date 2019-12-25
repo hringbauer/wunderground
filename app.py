@@ -103,7 +103,7 @@ class DatWunderApp(tk.Tk):
     def lastupdate(self):
         self.set_status_text("Loading the Data")
         self.wd.update_local()
-        self.v_wd = Analyze_WD(self.wd)  # Recreate the Analysis Object
+        self.v_wd = Analyze_WD(self.wd, self.sd)  # Recreate the Analysis Object
         self.set_status_text("Completed")
         
     def load_month(self):
@@ -111,12 +111,12 @@ class DatWunderApp(tk.Tk):
         
         month = self.get_month()
         self.wd.local_save_month(month)
-        self.v_wd = Analyze_WD(self.wd)  # Recreate the Analysis Object
+        self.v_wd = Analyze_WD(self.wd, self.sd)  # Recreate the Analysis Object
         self.set_status_text("Completed")
         
     def all(self):
         self.wd.update_local(all=1)
-        self.v_wd = Analyze_WD(self.wd)  # Recreate the Analysis Object
+        self.v_wd = Analyze_WD(self.wd, self.sd)  # Recreate the Analysis Object
     
     def monthly_rain(self):
         self.set_status_text("Loading the Data...")

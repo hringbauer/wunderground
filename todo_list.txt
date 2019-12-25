@@ -1,7 +1,7 @@
 ToDo List Weather Station:
 
 2018 April 8th:
-It would be nice to have a datatable with daily summary statistics:
+It would be nice to have a data table with daily summary statistics:
 (i.e. the full data broken down to summary statistics):
 
 Need save/load function for this data table
