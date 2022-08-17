@@ -24,6 +24,12 @@ import pickle as pickle
 import warnings
 import matplotlib.pyplot as plt
 
+from util.UnitConverter import ConvertToSystem
+from util.Parser import Parser
+from util.Utils import Utils
+import datetime
+import lxml.html as lh
+
 
 # Some helper functions:
 def clean_data(f):
@@ -126,6 +132,7 @@ class WeatherData(object):
             date = pickle.load(open(path, "rb"))
 
         else:
+            print("WARNING: FIRST DATE NOT FOUND")
             date = datetime.date(year=self.first_year,
                                  month=self.first_month, day=1)
 
@@ -160,7 +167,7 @@ class WeatherData(object):
         begin_date = self.load_last_date()  # Load the last time something was updated
 
         print("Download starting from:")
-        print(self.station_name)
+        print(begin_date)
 
         if self.gui:
             self.gui.update_idletasks()
@@ -195,6 +202,7 @@ class WeatherData(object):
 
         # Save:
         df.to_csv(path)
+        print(f"Successfully saved data to: {path}")
 
     def download_data_month(self, date):
         '''Loads all Data from one month in pandas a data-frame.
@@ -547,7 +555,141 @@ class WeatherData(object):
         '''Extract a Day cleaned up'''
         return self.give_data_day(date)
 
+#########################################################
+### Updated for new Wunderground interface
 
+class WeatherData2(WeatherData):
+    '''Simple class that loads and gives back
+    specific data.'''
+    station_name = "IDRSING3"
+    url = "http://www.wunderground.com/weatherstation/WXDailyHistory.asp?ID={station}&day={day}&month={month}&year={year}&graphspan=day&format=1"
+    
+    wunder_url = "https://www.wunderground.com/dashboard/pws/"
+    unit_system = "metric"
+    output = False
+    
+    local_folder = "./Data/"  # Where to find the data
+    last_date = 0  # Last date for which data is available
+    # Name of File that saves when there was the last update
+    fn_last_updated = "last_updated.p"
+
+    first_year = 2017
+    first_month = 5
+
+    # Which Time Zone the Data comes from (it is downloaded as UTC)
+    timezone = "Europe/Vienna"
+    gui = None
+    
+    
+    def scrap_station(self, weather_station_url="https://www.wunderground.com/dashboard/pws/", station_name="IDRSING3", 
+                      unit_system="metric", start_DATE="", end_DATE="", timeout = 60, savepath="", output=True):
+        """Get data from Weather Station. 
+        Input: Parameters about station and start and end date
+        Return: Pandas Dataframe in format for Weather Station"""
+        
+        session = requests.Session()
+        
+        weather_station_url =  weather_station_url + station_name
+
+        url_gen = Utils.date_url_generator(weather_station_url, start_DATE, end_DATE)
+        #station_name = weather_station_url.split('/')[-1]
+        
+        
+        if len(savepath)==0:
+            savepath = f'{station_name}.csv'
+
+        with open(savepath, 'a+', newline='') as csvfile:
+            dfs = [] # Where the output will be saved to
+            for date_string, url in url_gen:
+                try:
+                    if output:
+                        print(f'Downloading Weather data from {url}')
+                    history_table = False
+                    while not history_table:
+                        html_string = session.get(url, timeout=timeout)
+                        doc = lh.fromstring(html_string.content)
+                        history_table = doc.xpath('//*[@id="main-page-content"]/div/div/div/lib-history/div[2]/lib-history-table/div/div/div/table/tbody')
+                        if not history_table:
+                            if output:
+                                print("Refreshing session.")
+                            session = requests.Session()
+
+                    data_rows = Parser.parse_html_table(date_string, history_table)
+
+                    converter = ConvertToSystem(unit_system)
+                    data_to_write = converter.clean_and_convert(data_rows)
+                    dfs.append(pd.DataFrame(data_to_write))
+
+                    print(f'Saving {len(data_to_write)} rows')
+                except Exception as e:
+                    print(e)
+            df=pd.concat(dfs)
+            df["station"] = station_name
+            return df
+
+    def to_normed_df(self, df):
+        """Transform a scrapped wunderground dataframe to a normalized df"""  
+
+        dct = {'Temperature': 'temp', 'Precip_Accum': 'total_rain', 'Precip_Rate': 'hour_rain',  'Humidity': 'humidity',
+               'Wind': 'wind_direction',  'Speed': 'wind',  'Speed': 'wind',  'Gust': 'wind_gust',
+                'Pressure': 'pressure',  'Solar': 'solar', 'Dew_Point': 'dewpoint'
+               }
+        df_new = df.rename(columns=dct)
+
+        ### Update data column as combo of date and time
+        df_new["date"] 	=  pd.to_datetime(df["Date"].str.replace("/","-") + " " +  df["Time"])
+        return df_new
+
+    def check_valid_wunder_df(self, df):
+        """Does a quick check whether dataframe is valid for 
+        software here."""
+
+        cols = ['temp', 'hour_rain', 'total_rain', 'date', 'humidity',
+           'wind_direction', 'wind', 'wind_gust', 'pressure', 'solar', 'dewpoint',
+           'station']
+        columns = df.columns
+
+        for c in cols:
+            if c not in columns:
+                raise RuntimeWarning(f"Column {c} is missing")
+    
+    
+    # Updated from parent object (WeatherData)
+    def download_data_day(self, day, month, year, station="IDRSING3"):
+        """
+        Function to return a data frame of weather data for Wunderground PWS station.
+        Returns all data for a single day as Dataframe
+        Args:
+            station (string): Station code from the Wunderground website
+            day (int): Day of month for which data is requested
+            month (int): Month for which data is requested
+            year (int): Year for which data is requested
+
+        Returns:
+            Pandas Dataframe with weather data for specified station and date.
+        """
+        # If no station Name given use default:
+        if len(station) == 0:
+            station = self.station_name
+
+        print("Downloading: Year: %s Month: %s Day: %s " % (year, month, day))
+        if self.gui:
+            self.gui.update_idletasks()
+            
+        start_date =  datetime.date(year, month, day)
+        #end_date = start_date + datetime.timedelta(days=1)
+
+        df = self.scrap_station(weather_station_url=self.wunder_url, station_name=station, 
+                                unit_system=self.unit_system, start_DATE=start_date, end_DATE=start_date, timeout = 100, 
+                                savepath="", output=self.output)
+        
+        df = self.to_normed_df(df) # Update Column Names
+        self.check_valid_wunder_df(df) # Check whether valid Wunder Dataframe
+        
+        return df
+    
+    
+##########################################################
 #################################
 class SummaryData(WeatherData):
     '''Class that calculates and loads

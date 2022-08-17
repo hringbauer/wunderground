@@ -5,7 +5,7 @@ Uses a subclass of tkinter to have a GUI!!
 @author: Harald Ringbauer
 '''
 
-from load_data import WeatherData, SummaryData
+from load_data import WeatherData2, SummaryData
 from visualize_data import Analyze_WD
 import numpy as np
 import datetime
@@ -32,7 +32,7 @@ class DatWunderApp(tk.Tk):
         tk.Tk.__init__(self)
 
         # Load the Data and visualization Objects
-        self.wd = WeatherData(gui=self)  # Load the Data
+        self.wd = WeatherData2(gui=self)  # Load the Data
         # Create The Statistics Object
         self.sd = SummaryData(self.wd, gui=self)
         # Create the Analysis Object
