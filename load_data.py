@@ -40,6 +40,10 @@ def clean_data(f):
     def decorated(*args, **kwargs):
         df = f(*args, **kwargs)  # Call original Function
         df = df[df['solar'] >= 0]
+        
+        ### Remove NAs from newer loading
+        idx = df["temp"] == "NA"
+        df = df[~idx]
         return df
 
     return decorated
@@ -325,7 +329,12 @@ class WeatherData(object):
             return pd.DataFrame()
 
         # Read and make Datetime the Index (it's time series data!)
-        df = pd.read_csv(path, parse_dates=[4], index_col=[4])
+        #df = pd.read_csv(path, parse_dates=[4], index_col=[4])
+        df = pd.read_csv(path)
+        df["date"] = pd.to_datetime(df["date"])
+        df.set_index('date', inplace=True)
+        df.drop(columns="Unnamed: 0", inplace=True) # Remove that unnecessary  junk column
+        
         return df
 
     @clean_data
@@ -337,9 +346,12 @@ class WeatherData(object):
         '''Extracts only a day. Takes a date-time as input
         date: datetime.date object!'''
         df = self.give_data_month(date)
+        
+        if df.dt.tz is None:
+            df.tz_localize("UTC")
+            
         # dates = np.array([give_dt_date(date, tz_string=tz_string) for date in df['date']])  # Extract only the dates
-        df = df.tz_localize("UTC").tz_convert(
-            self.timezone)    # Convert to Austrian Timezone
+        df = df.tz_convert(self.timezone)    # Convert to Austrian Timezone
 
         try:
             df = df[str(date)]                      # Extract the right date
@@ -628,7 +640,8 @@ class WeatherData2(WeatherData):
             return df
 
     def to_normed_df(self, df):
-        """Transform a scrapped wunderground dataframe to a normalized df"""  
+        """Transform a scrapped wunderground dataframe to a normalized df.
+        Normalize Column names and create UTC date column"""  
 
         dct = {'Temperature': 'temp', 'Precip_Accum': 'total_rain', 'Precip_Rate': 'hour_rain',  'Humidity': 'humidity',
                'Wind': 'wind_direction',  'Speed': 'wind',  'Speed': 'wind',  'Gust': 'wind_gust',
@@ -636,8 +649,11 @@ class WeatherData2(WeatherData):
                }
         df_new = df.rename(columns=dct)
 
-        ### Update data column as combo of date and time
-        df_new["date"] 	=  pd.to_datetime(df["Date"].str.replace("/","-") + " " +  df["Time"])
+        ### Update data column as combo of date and time and insert as first column
+        date_column =  pd.to_datetime(df["Date"].str.replace("/","-") + " " +  df["Time"])
+        date_column = date_column.dt.tz_localize(self.timezone).dt.tz_convert("UTC")    # To Save in UTC    
+        df_new.insert(0, 'date', date_column)
+        
         return df_new
 
     def check_valid_wunder_df(self, df):
