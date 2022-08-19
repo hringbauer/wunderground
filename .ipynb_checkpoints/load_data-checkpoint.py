@@ -144,9 +144,10 @@ class WeatherData(object):
               (date.year, date.month))
         return date
 
-    def save_local(self, begin_date=None, end_date=None):
+    def save_local(self, begin_date=None, end_date=None, update_end_date=False):
         '''Saves the date locally within the given time period
         from begin to end date. Format should be in Datetime objects
+        update_end_date: To running updates of end date every successful month
         '''
 
         # In case no begin given set to very beginning of Measurements
@@ -161,11 +162,16 @@ class WeatherData(object):
 
         for dt in rrule(MONTHLY, dtstart=begin_date, until=end_date):
             self.local_save_month(dt)
+            
+            if update_end_date:
+                #day_m=calendar.monthrange(dt.year, dt.month)[1]
+                dt_e = datetime.datetime(dt.year, dt.month, 1) # So that inc. month is no prob.
+                self.save_last_date(dt_e)
 
     def update_local(self, end_date=None, all=0):
         '''Updates all local files up until end_date.
         If all!=0 reload EVERYTHING!'''
-        if end_date == None:
+        if end_date == None: 
             end_date = datetime.datetime.now()
 
         begin_date = self.load_last_date()  # Load the last time something was updated
@@ -177,7 +183,9 @@ class WeatherData(object):
             self.gui.update_idletasks()
 
         if all == 0:
-            self.save_local(begin_date, end_date)
+            self.save_local(begin_date, end_date, update_end_date=True)
+            
+            ### Break up into months - to save progress in end data
 
         elif all == 1:
             self.save_local(end_date=end_date)  # Locally saves everything!
@@ -347,14 +355,17 @@ class WeatherData(object):
         date: datetime.date object!'''
         df = self.give_data_month(date)
         
-        if df.dt.tz is None:
-            df.tz_localize("UTC")
-            
+        ### Add UTC Timezone if none available (e.g. pre 2020)
+        try:
+            df = df.tz_localize("UTC")
+        except(TypeError):   # If Timezone already exists cannot localize...
+            pass
+        
         # dates = np.array([give_dt_date(date, tz_string=tz_string) for date in df['date']])  # Extract only the dates
         df = df.tz_convert(self.timezone)    # Convert to Austrian Timezone
 
         try:
-            df = df[str(date)]                      # Extract the right date
+            df = df.loc[str(date)]                      # Extract the right date
         except:
             df = df[0:0]
             warnings.warn("Error: Date not found!!", RuntimeWarning)
@@ -648,6 +659,13 @@ class WeatherData2(WeatherData):
                 'Pressure': 'pressure',  'Solar': 'solar', 'Dew_Point': 'dewpoint'
                }
         df_new = df.rename(columns=dct)
+        
+        ### If empty Dataframe (usually without column names...) create right empty df
+        if len(df_new)==0:
+            df_new = pd.DataFrame(columns=['date', 'Date', 'Time', 'temp', 'dewpoint', 'humidity',
+                           'wind_direction', 'wind', 'wind_gust', 'pressure', 'hour_rain',
+                          'total_rain', 'UV', 'solar', 'station'])
+            return df_new
 
         ### Update data column as combo of date and time and insert as first column
         date_column =  pd.to_datetime(df["Date"].str.replace("/","-") + " " +  df["Time"])
@@ -698,10 +716,27 @@ class WeatherData2(WeatherData):
         df = self.scrap_station(weather_station_url=self.wunder_url, station_name=station, 
                                 unit_system=self.unit_system, start_DATE=start_date, end_DATE=start_date, timeout = 100, 
                                 savepath="", output=self.output)
+        # df can potentially be empty...
         
         df = self.to_normed_df(df) # Update Column Names
         self.check_valid_wunder_df(df) # Check whether valid Wunder Dataframe
         
+        return df
+    
+    
+    def download_data_month(self, date):
+        '''Loads all Data from one month in pandas a data-frame.
+        Gets raw data from all days and concatenates them'''
+        day = 1
+
+        dfs = []
+        for day in range(1, calendar.monthrange(date.year, date.month)[1] + 1):
+            df = self.download_data_day(day, date.month, date.year)
+            #if len(df) != 0:  # Removed as now correct empty dfs!
+            dfs.append(df)
+        if self.gui:
+            print("Data Rows per Month loaded: %i" % len(dfs))
+        df = pd.concat(dfs, ignore_index=True)
         return df
     
     
