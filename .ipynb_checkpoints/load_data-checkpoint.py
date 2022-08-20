@@ -669,7 +669,7 @@ class WeatherData2(WeatherData):
 
         ### Update data column as combo of date and time and insert as first column
         date_column =  pd.to_datetime(df["Date"].str.replace("/","-") + " " +  df["Time"])
-        date_column = date_column.dt.tz_localize(self.timezone).dt.tz_convert("UTC")    # To Save in UTC    
+        date_column = date_column.dt.tz_localize(self.timezone, ambiguous="infer").dt.tz_convert("UTC")    # To Save in UTC    
         df_new.insert(0, 'date', date_column)
         
         return df_new
