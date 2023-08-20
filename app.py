@@ -235,11 +235,22 @@ class DatWunderApp(tk.Tk):
     # Summary Statistics
 
     def calc_summary(self):
+        """Calculate Summary Stats between two days"""
         self.set_status_text("Calculating Summary Statistics...")
+        self.pb = ttk.Progressbar(self, orient="horizontal",
+                                  length=350, mode="determinate")  # Make progressbar
+        self.pb.pack()
+        
+        ### Input
         beg_date = self.get_day()
         end_date = self.get_day()
+        
+        ### Do the job
         self.sd.set_summary_statistics(beg_date, end_date)
         print("Test successful. YOU ROCK HARALD")
+        
+        ### Destroy Progress Bar
+        self.pb.destroy()  # Delete Progressbar
         self.set_status_text("Waiting...")
 
     def calc_summary_update(self):

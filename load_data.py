@@ -778,12 +778,12 @@ class SummaryData(WeatherData):
             self.gui = gui
 
     def update_sum_days(self, all=False):
-        '''Updates Summary Statistics since last day.
-        all: Load everything!'''
+        '''Updates Summary Statistics since last saved day.
+        all: If True Load all the dates'''
         # Find out last Summary Stats save
         last_save_date = self.load_last_date_ss()
 
-        if all == True:
+        if all:
             last_save_date = datetime.date(
                 year=self.first_year, month=self.first_month, day=1)
 
@@ -885,7 +885,7 @@ class SummaryData(WeatherData):
     def set_summary_statistics(self, start_date, end_date):
         '''Calculate Summary Statistics Day'''
         if start_date.year != end_date.year:
-            warnings.warn("Must be same year!!", RuntimeWarning)
+            warnings.warn("Start and End Date must be in same year!", RuntimeWarning)
             return
 
         # Load the right Data Frame
@@ -902,9 +902,10 @@ class SummaryData(WeatherData):
             if self.gui:  # Make Progressbar!
                 self.gui.pb.step()
                 self.gui.update_idletasks()
-            # Calculate Summary Statistics AT THE MOMENT TOTAL RAIN FOR TEST LATER MORE
+            # Calculate Summary Statistics
             stats = self.summary_statistics_day(date)
-            ds.loc[date] = stats  # Sets the Summary Statistics
+            
+            ds.loc[pd.Timestamp(date)] = stats  # Sets the Summary Statistics
 
         self.save_data_frame(ds, start_date)  # Save to .csv
 
