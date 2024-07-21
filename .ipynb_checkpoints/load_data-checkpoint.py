@@ -932,8 +932,9 @@ class SummaryData(WeatherData):
             end_date = start_date
 
         df = self.load_data_frame(start_date)
-        df.tz_localize("Europe/Vienna")  # Add Time Zone Information
+        #df.tz_localize("Europe/Vienna")  # Add Time Zone Information
 
+        ### BANANA
         ds = df[str(start_date):str(end_date)]  # Extract the right substring
         return ds
 
@@ -970,7 +971,7 @@ class SummaryData(WeatherData):
         end_date = datetime.date(year, 12, 31)
         df = self.give_summary_statistics(start_date, end_date)
         # Create Groupby Object by Month
-        dfs = df.groupby(pd.Grouper(freq='M'))
+        dfs = df.groupby(pd.Grouper(freq='ME'))
         means_months = dfs[col].mean()
         return means_months
 
@@ -981,7 +982,7 @@ class SummaryData(WeatherData):
         end_date = datetime.date(year, 12, 31)
         df = self.give_summary_statistics(start_date, end_date)
         # Create Groupby Object by Month
-        dfs = df.groupby(pd.Grouper(freq='M'))
+        dfs = df.groupby(pd.Grouper(freq='ME'))
         means_months = dfs[col].sum()
         return means_months
 
