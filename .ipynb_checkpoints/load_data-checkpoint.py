@@ -788,7 +788,7 @@ class SummaryData(WeatherData):
                 year=self.first_year, month=self.first_month, day=1)
 
         # Find out last day of data
-        # Subtract one day to allow for missing data!
+        # Subtract one day to allow for missing data
         last_data_date = self.load_last_date() - datetime.timedelta(days=1)
         last_data_date = last_data_date.date()  # Convert do Date
 
@@ -810,18 +810,18 @@ class SummaryData(WeatherData):
             print("Doing Year: %i" % years[i])
             self.set_summary_statistics(begins[i], ends[i])
 
+        print("Successfully completed processing of Summary statistics")
         # Save Last Date
         self.save_last_date_ss(date=last_data_date)
 
-        print("Successfully completed downloading and processing of Summary statistics")
-
     def save_last_date_ss(self, date):
-        '''Pickle the last save date.'''
+        '''Pickle the last save date of summary stats.'''
         path = self.stats_folder + self.fn_last_updated_ss
 
         print("Saving New Last Date. Year: %i Month: %i" %
               (date.year, date.month))
         pickle.dump(date, open(path, "wb"))
+        print(f"Updated last Summary Stats Day to: {date}")
 
     def load_last_date_ss(self):
         '''Pickle loads the last save date of summary stats.'''
